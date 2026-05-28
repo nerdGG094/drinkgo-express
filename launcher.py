@@ -15,6 +15,7 @@ Para uso em DEV continua valendo o run.py (com auto-reload).
 import os
 import sys
 import socket
+import subprocess
 import threading
 import webbrowser
 import tkinter as tk
@@ -22,6 +23,11 @@ import tkinter as tk
 # ---------- Config ----------
 PORT = 5020
 TITULO_JANELA = "Comanda Digital — Servidor"
+
+# Auto-update via git pull a cada abertura. Setar COMANDA_NO_AUTOUPDATE=1 desativa.
+AUTO_UPDATE_DISABLE_ENV = "COMANDA_NO_AUTOUPDATE"
+UPDATE_FETCH_TIMEOUT = 15
+UPDATE_PULL_TIMEOUT = 45
 
 # Paleta (espelha a do app)
 BG_DARK     = "#0b1020"
@@ -96,6 +102,77 @@ def app_path() -> str:
     return os.path.abspath(os.path.dirname(__file__))
 
 
+# ---------- Auto-update (git pull) ----------
+def _run_git(args, cwd, timeout):
+    """Executa git silencioso no Windows (sem flash de console)."""
+    creationflags = 0
+    if os.name == "nt":
+        creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    return subprocess.run(
+        ["git", *args],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        creationflags=creationflags,
+    )
+
+
+def verificar_atualizacoes():
+    """
+    Verifica o repositório remoto (GitHub) e, se houver commits novos, baixa.
+    Retorna (atualizou: bool, mensagem: str). Falhas silenciosas — nunca bloqueia.
+    """
+    if os.environ.get(AUTO_UPDATE_DISABLE_ENV) == "1":
+        return False, "auto-update desativado"
+    if getattr(sys, "frozen", False):
+        return False, "build empacotado (sem auto-update)"
+
+    base = app_path()
+    if not os.path.isdir(os.path.join(base, ".git")):
+        return False, "sem repositório git"
+
+    try:
+        _run_git(["--version"], base, 5)
+    except Exception:
+        return False, "git não instalado"
+
+    try:
+        r = _run_git(["fetch", "--quiet"], base, UPDATE_FETCH_TIMEOUT)
+        if r.returncode != 0:
+            return False, "fetch falhou"
+    except subprocess.TimeoutExpired:
+        return False, "timeout no fetch"
+    except Exception:
+        return False, "erro no fetch"
+
+    try:
+        local = _run_git(["rev-parse", "@"], base, 5).stdout.strip()
+        remote = _run_git(["rev-parse", "@{u}"], base, 5).stdout.strip()
+    except Exception:
+        return False, "sem upstream configurado"
+
+    if not local or not remote or local == remote:
+        return False, "já está atualizado"
+
+    try:
+        r = _run_git(["pull", "--ff-only", "--quiet"], base, UPDATE_PULL_TIMEOUT)
+        if r.returncode != 0:
+            return False, "pull falhou (conflitos locais?)"
+    except Exception:
+        return False, "erro no pull"
+
+    return True, "nova versão baixada"
+
+
+def reiniciar_processo():
+    """Relança o launcher com o código atualizado e encerra o processo atual."""
+    try:
+        subprocess.Popen([sys.executable, *sys.argv], close_fds=True)
+    finally:
+        os._exit(0)
+
+
 def start_server():
     """Sobe o Flask em thread daemon (não bloqueia a UI)."""
     from app import create_app
@@ -113,6 +190,13 @@ def start_server():
 
 # ---------- GUI ----------
 def main():
+    # Verifica atualizações antes de subir o servidor. Se baixou nova versão,
+    # relança o processo para que o código atualizado seja carregado.
+    atualizou, _ = verificar_atualizacoes()
+    if atualizou:
+        reiniciar_processo()
+        return
+
     threading.Thread(target=start_server, daemon=True).start()
 
     ip = get_local_ip()
