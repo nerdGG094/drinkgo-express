@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Editar pedido #{{ pedido.id }}{% endblock %}
+
+{% block content %}
+<div class="editar-pedido-container">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Editar pedido #{{ pedido.id }}</h1>
+      <p class="page-subtitle">Ajuste as quantidades ou zere para remover</p>
+    </div>
+    <div class="page-actions">
+      <a href="{{ url_for('public.cardapio_pedido', pedido_id=pedido.id) }}" class="btn btn-outline btn-sm">
+        ← Voltar
+      </a>
+    </div>
+  </div>
+
+  <form method="post" class="editar-form card">
+
+    <div class="editar-lista">
+      {% for item in pedido.itens %}
+      <div class="editar-item">
+        <div class="editar-produto">{{ item.produto.nome }}</div>
+
+        <div class="editar-qtd">
+          <input type="number"
+                 name="item_{{ item.id }}"
+                 value="{{ item.quantidade }}"
+                 min="0"
+                 aria-label="Quantidade de {{ item.produto.nome }}">
+        </div>
+
+        <div class="editar-preco">R$ {{ "%.2f"|format(item.subtotal()) }}</div>
+      </div>
+      {% else %}
+      <p class="text-muted text-center" style="padding: var(--sp-4);">Nenhum item neste pedido.</p>
+      {% endfor %}
+    </div>
+
+    <div class="editar-acoes">
+      <button type="submit" class="btn btn-success">Salvar alterações</button>
+      <a href="{{ url_for('public.cardapio_pedido', pedido_id=pedido.id) }}" class="btn btn-outline">
+        Cancelar
+      </a>
+    </div>
+
+  </form>
+
+</div>
+{% endblock %}

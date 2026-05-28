@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Usuários{% endblock %}
+
+{% block content %}
+
+<div class="usuarios-container">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Usuários</h1>
+      <p class="page-subtitle">Garçons, caixas e administradores</p>
+    </div>
+    <div class="page-actions">
+      <a href="{{ url_for('admin.usuarios_novo') }}" class="btn btn-primary btn-sm">+ Novo usuário</a>
+    </div>
+  </div>
+
+  <div class="usuarios-grid">
+    {% for u in usuarios %}
+    <article class="usuario-card">
+
+      <header class="user-header">
+        <div class="user-avatar">{{ u.nome[:1]|upper }}</div>
+        <div style="flex:1; min-width:0;">
+          <h3 class="user-nome">{{ u.nome }}</h3>
+          <p class="user-email">{{ u.email }}</p>
+        </div>
+        <a class="btn btn-info btn-sm" href="{{ url_for('admin.usuarios_editar', user_id=u.id) }}">Editar</a>
+      </header>
+
+      <div class="user-info">
+        <div class="user-row">
+          <span class="label">Perfil</span>
+          <span class="badge badge-info">{{ u.role|upper }}</span>
+        </div>
+
+        <div class="user-row">
+          <span class="label">Status</span>
+          {% if u.ativo %}
+            <span class="badge badge-success">Ativo</span>
+          {% else %}
+            <span class="badge badge-danger">Inativo</span>
+          {% endif %}
+        </div>
+
+        {% set efetivas = u.permissoes_efetivas() %}
+        <div class="user-permissoes">
+          <span class="label">Acessos</span>
+          <div class="user-permissoes-chips">
+            {% if u.role == 'admin' %}
+              <span class="permissao-pill is-all">Todos os módulos</span>
+            {% elif efetivas %}
+              {% for k in efetivas %}
+                {% set p = PERMISSOES_BY_KEY.get(k) %}
+                {% if p %}
+                  <span class="permissao-pill" title="{{ p.desc }}">
+                    <span aria-hidden="true">{{ p.icon }}</span> {{ p.label }}
+                  </span>
+                {% endif %}
+              {% endfor %}
+            {% else %}
+              <span class="permissao-pill is-empty">Nenhum módulo liberado</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+    </article>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon" aria-hidden="true">👤</div>
+      <h2 class="empty-state-title">Nenhum usuário cadastrado</h2>
+      <p class="empty-state-desc">Cadastre o primeiro usuário para liberar acesso ao sistema.</p>
+      <div class="empty-state-actions">
+        <a href="{{ url_for('admin.usuarios_novo') }}" class="btn btn-primary btn-sm">+ Novo usuário</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+{% endblock %}

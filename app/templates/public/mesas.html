@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Mesas{% endblock %}
+
+{% block content %}
+
+<div class="container-mesas">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Mesas</h1>
+      <p class="page-subtitle">Toque em uma mesa para abrir o pedido</p>
+    </div>
+
+    <form method="get" class="form-quantidade">
+      <label for="qtd">Exibir</label>
+      <select id="qtd" name="qtd" onchange="this.form.submit()" class="form-control">
+        {% for n in [5, 10] %}
+        <option value="{{ n }}" {% if request.args.get('qtd')|int == n %}selected{% endif %}>
+          {{ n }} mesas
+        </option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  <div class="grid-mesas">
+    {% for mesa in mesas %}
+      {% set classe_status = "ocupada" if mesa.status == "ocupada" else "livre" %}
+
+      <div class="mesa-wrap">
+        <a class="mesa-card {{ classe_status }}"
+           href="{{ url_for('public.acessar_mesa', mesa_id=mesa.id) }}"
+           data-mesa="{{ mesa.id }}">
+
+          <span class="mesa-numero">{{ mesa.numero }}</span>
+
+          {% if mesa.status == "ocupada" %}
+            <small class="status-texto">⛔ Ocupada</small>
+            {% if mesa.pedido_aberto %}
+              <small class="garcom-nome">
+                🛎️ {{ mesa.pedido_aberto.garcom.nome if mesa.pedido_aberto.garcom else 'Sem garçom' }}
+              </small>
+            {% endif %}
+          {% else %}
+            <small class="status-texto">✓ Livre</small>
+          {% endif %}
+
+        </a>
+
+        {% if mesa.status == "ocupada" and current_user.role == 'admin' %}
+        <form method="post"
+              action="{{ url_for('admin.liberar_mesa', mesa_id=mesa.id) }}"
+              class="mesa-liberar-form"
+              data-confirm="Liberar Mesa {{ mesa.numero }}? Pedido(s) aberto(s) será(ão) finalizado(s) e contado(s) no relatório do dia em que foram lançados."
+              data-no-loading="true">
+          <input type="hidden" name="next" value="{{ request.url }}">
+          <button type="submit" class="mesa-liberar-btn" title="Liberar mesa (admin)">
+            ⚠ Liberar mesa
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Bloqueia toque-duplo / clique-duplo no card da mesa.
+  // Sem isso, em tablet/celular o usuário pode disparar 2 GETs simultâneos
+  // criando 2 pedidos vazios na mesma mesa (corrida no acessar_mesa).
+  (function () {
+    document.querySelectorAll(".mesa-card").forEach((card) => {
+      card.addEventListener("click", function (e) {
+        if (this.dataset.locked === "1") {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        this.dataset.locked = "1";
+        this.style.pointerEvents = "none";
+        this.style.opacity = "0.6";
+        // failsafe: libera depois de 8s caso a navegação falhe
+        setTimeout(() => {
+          this.dataset.locked = "";
+          this.style.pointerEvents = "";
+          this.style.opacity = "";
+        }, 8000);
+      });
+    });
+  })();
+
+  // Atualização periódica suave sem recarregar se usuário interage com formulário
+  (function () {
+    const TICK = 15000; // 15s
+    let iddle = true;
+    document.addEventListener("mousemove", () => iddle = false);
+    document.addEventListener("keydown", () => iddle = false);
+    setInterval(() => {
+      if (document.visibilityState === "visible" && iddle) {
+        window.location.reload();
+      }
+      iddle = true;
+    }, TICK);
+  })();
+</script>
+{% endblock %}

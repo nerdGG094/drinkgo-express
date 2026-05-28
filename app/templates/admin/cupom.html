@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Cupom — Pedido #{{ pedido.id }}{% endblock %}
+
+{% block content %}
+
+<div class="cupom-container">
+
+  <div class="cupom-card">
+
+    <div class="logo-recibo">
+      <img src="{{ url_for('static', filename='imagens/logo.png') }}" alt="Logo" class="logo-img">
+    </div>
+
+    <h2 class="titulo">CHOPP PALAZZO EXPRESS</h2>
+    <h2 class="titulo">PEDIDO FINALIZADO</h2>
+
+    <div class="linha-info">
+      <span class="label">Pedido nº</span>
+      <span class="valor">{{ pedido.id }}</span>
+    </div>
+
+    <div class="linha-info">
+      <span class="label">Data</span>
+      <span class="valor">{{ pedido.criado_em.strftime('%d/%m/%Y %H:%M') }}</span>
+    </div>
+
+    {% if pedido.garcom %}
+    <div class="linha-info">
+      <span class="label">Atendente</span>
+      <span class="valor">{{ pedido.garcom.nome }}</span>
+    </div>
+    {% endif %}
+
+    <div class="linha-info">
+      <span class="label">Tipo</span>
+      <span class="valor">
+        {% if pedido.tipo == 'mesa' and pedido.mesa %}
+          Mesa {{ pedido.mesa.numero }}
+        {% elif pedido.tipo == 'retirada' %}
+          Retirada — {{ pedido.cliente_nome }}
+        {% elif pedido.tipo == 'delivery' %}
+          Delivery — {{ pedido.cliente_nome }}
+        {% endif %}
+      </span>
+    </div>
+
+    {% if pedido.tipo == 'delivery' and pedido.endereco %}
+    <div class="linha-info">
+      <span class="label">Endereço</span>
+      <span class="valor">{{ pedido.endereco }}</span>
+    </div>
+    {% endif %}
+
+    <hr class="divisor">
+
+    <ul class="lista-itens">
+      {% for item in pedido.itens %}
+      <li>
+        <span class="item-nome">{{ item.quantidade }}× {{ item.produto.nome }}</span>
+        <span class="item-valor">R$ {{ '%.2f'|format(item.subtotal()) }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+
+    <hr class="divisor">
+
+    <div class="linha-total">
+      <span>Total</span>
+      <span>R$ {{ '%.2f'|format(pedido.total()) }}</span>
+    </div>
+
+    {% if pedido.desconto and pedido.desconto > 0 %}
+    <div class="linha-info" style="color:#dc2626;">
+      <span class="label">Desconto</span>
+      <span class="valor">- R$ {{ '%.2f'|format(pedido.desconto) }}</span>
+    </div>
+    <div class="linha-total">
+      <span>Total final</span>
+      <span>R$ {{ '%.2f'|format(pedido.total_com_desconto()) }}</span>
+    </div>
+    {% endif %}
+
+    {% set _fpag = {'dinheiro':'Dinheiro','pix':'Pix','cartao':'Cartão','bonif':'Bonificação'} %}
+
+    {% if pedido.forma_pagamento %}
+    <div class="linha-info">
+      <span class="label">Pagamento</span>
+      <span class="valor">
+        {{ _fpag.get(pedido.forma_pagamento, pedido.forma_pagamento|capitalize) }}
+        {% if pedido.forma_pagamento2 %} + {{ _fpag.get(pedido.forma_pagamento2, pedido.forma_pagamento2|capitalize) }}{% endif %}
+      </span>
+    </div>
+
+    <div class="linha-info">
+      <span class="label">{{ _fpag.get(pedido.forma_pagamento, pedido.forma_pagamento|capitalize) }}</span>
+      <span class="valor">R$ {{ '%.2f'|format(pedido.valor_entregue or 0) }}</span>
+    </div>
+    {% endif %}
+
+    {% if pedido.forma_pagamento2 and (pedido.valor_pagamento2 or 0) > 0 %}
+    <div class="linha-info">
+      <span class="label">{{ _fpag.get(pedido.forma_pagamento2, pedido.forma_pagamento2|capitalize) }}</span>
+      <span class="valor">R$ {{ '%.2f'|format(pedido.valor_pagamento2 or 0) }}</span>
+    </div>
+    {% endif %}
+
+    {% if pedido.troco and pedido.troco > 0 %}
+    <div class="linha-info">
+      <span class="label">Troco</span>
+      <span class="valor">R$ {{ '%.2f'|format(pedido.troco) }}</span>
+    </div>
+    {% endif %}
+
+    {# ============== BLOCO PIX (QR + Copia e Cola) ============== #}
+    {% if pix_qrcode and pix_payload %}
+    <hr class="divisor">
+    <div class="pix-bloco">
+      <div class="pix-titulo">PAGAR COM PIX</div>
+
+      <div class="pix-qr">
+        <img src="{{ pix_qrcode }}" alt="QR Code Pix">
+      </div>
+
+      <div class="pix-valor">R$ {{ '%.2f'|format(pix_valor) }}</div>
+
+      <div class="pix-info">
+        <span class="pix-info-label">Chave</span>
+        <span class="pix-info-valor">{{ pix_chave }}</span>
+      </div>
+
+      <div class="pix-copia">
+        <label for="pixCopiaCola">Pix Copia e Cola</label>
+        <textarea id="pixCopiaCola" readonly rows="3">{{ pix_payload }}</textarea>
+        <button type="button" class="pix-btn-copiar" onclick="copiarPix()">
+          Copiar código
+        </button>
+        <div class="pix-instrucoes">
+          Escaneie o QR no app do banco ou cole o código no Pix Copia e Cola.
+        </div>
+      </div>
+    </div>
+    {% elif (pedido.forma_pagamento == 'pix' or pedido.forma_pagamento2 == 'pix') and not pix_chave %}
+    <hr class="divisor">
+    <div class="pix-aviso">
+      ⚠️ Pix selecionado, mas a chave da loja não está configurada.<br>
+      Defina <code>PIX_CHAVE</code> em <code>config.py</code> ou variável de ambiente.
+    </div>
+    {% endif %}
+
+  </div>
+
+  <div class="acao-imprimir">
+    <button onclick="window.print()" class="btn-print">Imprimir cupom</button>
+    <a href="{{ url_for('admin.pedidos') }}" class="btn-voltar">Voltar</a>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function copiarPix() {
+    const ta = document.getElementById('pixCopiaCola');
+    if (!ta) return;
+    ta.select();
+    ta.setSelectionRange(0, 99999);
+    try {
+      navigator.clipboard.writeText(ta.value).then(showCopied, fallbackCopy);
+    } catch (e) { fallbackCopy(); }
+  }
+  function fallbackCopy() {
+    try { document.execCommand('copy'); showCopied(); }
+    catch (e) { alert('Não foi possível copiar. Selecione o texto manualmente.'); }
+  }
+  function showCopied() {
+    const btn = document.querySelector('.pix-btn-copiar');
+    if (!btn) return;
+    const original = btn.textContent;
+    btn.textContent = '✓ Copiado!';
+    btn.classList.add('is-copied');
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.classList.remove('is-copied');
+    }, 1800);
+  }
+</script>
+{% endblock %}

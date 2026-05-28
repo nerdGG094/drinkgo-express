@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar Usuário' if usuario else 'Novo Usuário' }}{% endblock %}
+
+{% block content %}
+
+<div class="usuario-form-page">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">{{ 'Editar usuário' if usuario else 'Novo usuário' }}</h1>
+      <p class="page-subtitle">{{ 'Atualize dados pessoais, acesso e permissões.' if usuario else 'Preencha os dados para liberar acesso ao sistema.' }}</p>
+    </div>
+    <div class="page-actions">
+      <a href="{{ url_for('admin.usuarios') }}" class="btn btn-outline btn-sm">← Voltar</a>
+    </div>
+  </div>
+
+  <form method="post" class="usuario-form-grid" id="formUsuario">
+
+    {# ============ PREVIEW LATERAL ============ #}
+    <aside class="usuario-preview">
+      <div class="usuario-preview-avatar" id="previewAvatar">
+        {{ (usuario.nome[:1] if usuario and usuario.nome else '?')|upper }}
+      </div>
+
+      <h2 class="usuario-preview-nome" id="previewNome">
+        {{ usuario.nome if usuario else 'Novo usuário' }}
+      </h2>
+
+      <span class="usuario-preview-email" id="previewEmail">
+        {{ usuario.email if usuario else 'sem e-mail' }}
+      </span>
+
+      <div class="usuario-preview-badges">
+        <span class="badge badge-info" id="previewRole">
+          {{ (usuario.role if usuario else 'garcom')|upper }}
+        </span>
+        <span class="badge {{ 'badge-success' if (not usuario or usuario.ativo) else 'badge-danger' }}" id="previewStatus">
+          {{ 'ATIVO' if (not usuario or usuario.ativo) else 'INATIVO' }}
+        </span>
+      </div>
+
+      <div class="usuario-preview-stat">
+        <span class="usuario-preview-stat-label">Acessos liberados</span>
+        <div class="usuario-preview-stat-row">
+          <span class="usuario-preview-stat-valor" id="previewCount">
+            {{ permissoes_marcadas|length if usuario and usuario.role != 'admin' else permissoes_disponiveis|length }}
+          </span>
+          <span class="usuario-preview-stat-total">/ {{ permissoes_disponiveis|length }} módulos</span>
+        </div>
+        <div class="usuario-preview-bar" aria-hidden="true">
+          <div class="usuario-preview-bar-fill" id="previewBar" style="width: 100%"></div>
+        </div>
+      </div>
+    </aside>
+
+    {# ============ FORM PRINCIPAL ============ #}
+    <div class="usuario-main">
+
+      {# Identificação #}
+      <section class="form-section">
+        <header class="form-section-header">
+          <span class="form-section-icon" aria-hidden="true">👤</span>
+          <h2 class="form-section-titulo">Identificação</h2>
+        </header>
+        <div class="form-section-body">
+          <div class="usuario-fields-grid">
+
+            <div class="usuario-field">
+              <label for="nomeInput">Nome completo</label>
+              <input id="nomeInput" type="text" name="nome"
+                     value="{{ usuario.nome if usuario else '' }}"
+                     placeholder="Ex.: João da Silva"
+                     required>
+            </div>
+
+            <div class="usuario-field">
+              <label for="emailInput">E-mail</label>
+              <input id="emailInput" type="email" name="email"
+                     value="{{ usuario.email if usuario else '' }}"
+                     placeholder="usuario@exemplo.com"
+                     required>
+            </div>
+
+            <div class="usuario-field">
+              <label for="roleSelect">Perfil</label>
+              <select id="roleSelect" name="role" required>
+                {% for r in ['garcom','caixa','admin'] %}
+                  <option value="{{ r }}" {% if usuario and usuario.role == r %}selected{% elif not usuario and r == 'garcom' %}selected{% endif %}>
+                    {{ r|upper }}
+                  </option>
+                {% endfor %}
+              </select>
+              <small class="usuario-hint">Admin sempre tem acesso a tudo, mesmo com permissões individuais desmarcadas.</small>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {# Acesso (senha + ativo) #}
+      <section class="form-section">
+        <header class="form-section-header">
+          <span class="form-section-icon" aria-hidden="true">🔒</span>
+          <h2 class="form-section-titulo">Acesso</h2>
+        </header>
+        <div class="form-section-body">
+          <div class="usuario-fields-grid">
+
+            {% if usuario %}
+            {# === Edição: redefinição de senha explícita com dupla digitação === #}
+            <div class="usuario-field usuario-field-senha" style="grid-column: 1 / -1;">
+              <label class="senha-trocar-label">
+                <input type="checkbox" name="alterar_senha" id="alterarSenhaChk" value="1">
+                <span>Redefinir senha deste usuário</span>
+              </label>
+
+              <div class="senha-bloco" id="senhaBloco" hidden>
+                <div class="usuario-fields-grid" style="grid-column: 1 / -1;">
+                  <div class="usuario-field">
+                    <label for="senhaInput">Nova senha</label>
+                    <div class="usuario-senha-wrap">
+                      <input id="senhaInput" type="password" name="senha" autocomplete="new-password"
+                             placeholder="Mínimo 4 caracteres">
+                      <button type="button" class="usuario-senha-toggle" aria-label="Mostrar/ocultar senha" id="btnTogglePassword">
+                        <span aria-hidden="true">👁</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="usuario-field">
+                    <label for="senhaConfInput">Confirmar nova senha</label>
+                    <input id="senhaConfInput" type="password" name="senha_confirmar" autocomplete="new-password"
+                           placeholder="Digite a senha novamente">
+                    <small class="usuario-hint" id="senhaMatchHint"></small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% else %}
+            {# === Novo usuário: senha obrigatória, sem dupla digitação === #}
+            <div class="usuario-field usuario-field-senha">
+              <label for="senhaInput">Senha</label>
+              <div class="usuario-senha-wrap">
+                <input id="senhaInput" type="password" name="senha" autocomplete="new-password"
+                       placeholder="Mínimo 4 caracteres" required>
+                <button type="button" class="usuario-senha-toggle" aria-label="Mostrar/ocultar senha" id="btnTogglePassword">
+                  <span aria-hidden="true">👁</span>
+                </button>
+              </div>
+            </div>
+            {% endif %}
+
+            {% if usuario %}
+            <div class="usuario-field usuario-field-switch">
+              <label for="ativoSwitch">Status do usuário</label>
+              <label class="switch-toggle">
+                <input id="ativoSwitch" type="checkbox" name="ativo" value="1" {% if usuario.ativo %}checked{% endif %}>
+                <span class="switch-slider" aria-hidden="true"></span>
+                <span class="switch-label">
+                  <span class="switch-label-on">Ativo</span>
+                  <span class="switch-label-off">Inativo</span>
+                </span>
+              </label>
+            </div>
+            {% else %}
+            {# Novo usuário sempre é ativo — campo oculto pra simplificar #}
+            <input type="hidden" name="ativo" value="1">
+            {% endif %}
+
+          </div>
+        </div>
+      </section>
+
+      {# Páginas liberadas #}
+      <section class="form-section permissoes-section" id="permissoesBloco">
+        <header class="form-section-header">
+          <span class="form-section-icon" aria-hidden="true">🛡️</span>
+          <div class="form-section-titulo-wrap">
+            <h2 class="form-section-titulo">Páginas liberadas</h2>
+            <p class="form-section-sub">Marque as áreas que este usuário poderá acessar</p>
+          </div>
+          <div class="form-section-acoes">
+            <button type="button" class="btn-mini" id="btnSelTudo">Selecionar tudo</button>
+            <button type="button" class="btn-mini btn-mini-outline" id="btnLimpar">Limpar</button>
+          </div>
+        </header>
+
+        <div class="form-section-body">
+          <div class="permissoes-grid">
+            {% for p in permissoes_disponiveis %}
+            <label class="permissao-card">
+              <input type="checkbox"
+                     name="permissao_{{ p.key }}"
+                     value="1"
+                     {% if p.key in permissoes_marcadas %}checked{% endif %}>
+              <span class="permissao-tile" aria-hidden="true">{{ p.icon }}</span>
+              <span class="permissao-conteudo">
+                <span class="permissao-nome">{{ p.label }}</span>
+                <span class="permissao-desc">{{ p.desc }}</span>
+              </span>
+              <span class="permissao-check" aria-hidden="true">✓</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+
+      <div class="usuario-form-actions">
+        <a href="{{ url_for('admin.usuarios') }}" class="btn btn-outline">Cancelar</a>
+        <button type="submit" class="btn btn-primary btn-lg">
+          {{ 'Salvar alterações' if usuario else 'Criar usuário' }}
+        </button>
+      </div>
+
+    </div>
+  </form>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const form = document.getElementById('formUsuario');
+    if (!form) return;
+
+    /* ---------- Preview ao vivo ---------- */
+    const inputNome  = document.getElementById('nomeInput');
+    const inputEmail = document.getElementById('emailInput');
+    const selRole    = document.getElementById('roleSelect');
+    const swAtivo    = document.getElementById('ativoSwitch');
+
+    const elNome    = document.getElementById('previewNome');
+    const elEmail   = document.getElementById('previewEmail');
+    const elAvatar  = document.getElementById('previewAvatar');
+    const elRole    = document.getElementById('previewRole');
+    const elStatus  = document.getElementById('previewStatus');
+    const elCount   = document.getElementById('previewCount');
+    const elBar     = document.getElementById('previewBar');
+
+    const bloco = document.getElementById('permissoesBloco');
+    const checks = bloco.querySelectorAll('input[type="checkbox"][name^="permissao_"]');
+    const total = checks.length;
+
+    function syncNomeAvatar() {
+      const nome = (inputNome.value || '').trim();
+      elNome.textContent = nome || 'Novo usuário';
+      elAvatar.textContent = (nome.charAt(0) || '?').toUpperCase();
+    }
+    function syncEmail() {
+      elEmail.textContent = (inputEmail.value || '').trim() || 'sem e-mail';
+    }
+    function syncRole() {
+      const r = selRole.value || 'garcom';
+      elRole.textContent = r.toUpperCase();
+    }
+    function syncStatus() {
+      if (!swAtivo) return;
+      const ativo = swAtivo.checked;
+      elStatus.textContent = ativo ? 'ATIVO' : 'INATIVO';
+      elStatus.classList.toggle('badge-success', ativo);
+      elStatus.classList.toggle('badge-danger', !ativo);
+    }
+    function syncContagem() {
+      const isAdmin = selRole.value === 'admin';
+      const marcadas = isAdmin ? total : Array.from(checks).filter(c => c.checked).length;
+      elCount.textContent = marcadas;
+      const pct = total ? Math.round((marcadas / total) * 100) : 0;
+      elBar.style.width = pct + '%';
+    }
+
+    if (inputNome)  inputNome.addEventListener('input', syncNomeAvatar);
+    if (inputEmail) inputEmail.addEventListener('input', syncEmail);
+    if (swAtivo)    swAtivo.addEventListener('change', syncStatus);
+
+    /* ---------- Role admin: força tudo marcado ---------- */
+    function aplicarRole() {
+      const isAdmin = selRole.value === 'admin';
+      bloco.classList.toggle('is-disabled', isAdmin);
+      checks.forEach(c => {
+        if (isAdmin) {
+          if (!c.dataset._prev) c.dataset._prev = c.checked ? '1' : '0';
+          c.checked = true;
+          c.disabled = true;
+        } else {
+          c.disabled = false;
+          if (c.dataset._prev !== undefined) {
+            c.checked = c.dataset._prev === '1';
+            delete c.dataset._prev;
+          }
+        }
+      });
+      syncRole();
+      syncContagem();
+    }
+
+    selRole.addEventListener('change', aplicarRole);
+    checks.forEach(c => c.addEventListener('change', syncContagem));
+
+    document.getElementById('btnSelTudo').addEventListener('click', () => {
+      checks.forEach(c => { if (!c.disabled) c.checked = true; });
+      syncContagem();
+    });
+    document.getElementById('btnLimpar').addEventListener('click', () => {
+      checks.forEach(c => { if (!c.disabled) c.checked = false; });
+      syncContagem();
+    });
+
+    /* ---------- Toggle senha ---------- */
+    const btnPwd = document.getElementById('btnTogglePassword');
+    const inpPwd = document.getElementById('senhaInput');
+    const inpPwd2 = document.getElementById('senhaConfInput');
+    if (btnPwd && inpPwd) {
+      btnPwd.addEventListener('click', () => {
+        const isPwd = inpPwd.type === 'password';
+        inpPwd.type = isPwd ? 'text' : 'password';
+        if (inpPwd2) inpPwd2.type = inpPwd.type;
+        btnPwd.classList.toggle('is-on', isPwd);
+      });
+    }
+
+    /* ---------- Redefinir senha (edição): toggle + match ---------- */
+    const chkAlterar = document.getElementById('alterarSenhaChk');
+    const senhaBloco = document.getElementById('senhaBloco');
+    const matchHint  = document.getElementById('senhaMatchHint');
+
+    if (chkAlterar && senhaBloco) {
+      const aplicarToggleSenha = () => {
+        const ativo = chkAlterar.checked;
+        senhaBloco.hidden = !ativo;
+        if (inpPwd) {
+          inpPwd.required = ativo;
+          if (!ativo) { inpPwd.value = ''; if (inpPwd2) inpPwd2.value = ''; }
+        }
+      };
+      chkAlterar.addEventListener('change', aplicarToggleSenha);
+      aplicarToggleSenha();
+    }
+
+    if (inpPwd && inpPwd2 && matchHint) {
+      const verificar = () => {
+        if (!inpPwd.value && !inpPwd2.value) {
+          matchHint.textContent = '';
+          matchHint.classList.remove('is-error', 'is-ok');
+          return;
+        }
+        if (inpPwd.value && inpPwd.value === inpPwd2.value) {
+          matchHint.textContent = '✓ As senhas coincidem';
+          matchHint.classList.add('is-ok');
+          matchHint.classList.remove('is-error');
+        } else {
+          matchHint.textContent = '✗ As senhas não coincidem';
+          matchHint.classList.add('is-error');
+          matchHint.classList.remove('is-ok');
+        }
+      };
+      inpPwd.addEventListener('input', verificar);
+      inpPwd2.addEventListener('input', verificar);
+    }
+
+    /* Bloqueia submit se admin marcou "alterar senha" mas senhas não batem */
+    form.addEventListener('submit', (e) => {
+      if (chkAlterar && chkAlterar.checked) {
+        if (!inpPwd.value || inpPwd.value !== (inpPwd2 ? inpPwd2.value : '')) {
+          e.preventDefault();
+          e.stopPropagation();
+          alert('As senhas digitadas não coincidem. Corrija ou desmarque "Redefinir senha".');
+          inpPwd.focus();
+        }
+      }
+    });
+
+    aplicarRole();
+    syncStatus();
+    syncContagem();
+  })();
+</script>
+{% endblock %}

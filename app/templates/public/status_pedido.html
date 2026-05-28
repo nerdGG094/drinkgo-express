@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Status do pedido #{{ pedido.id }}{% endblock %}
+
+{% block content %}
+
+<div class="card card-centered" style="max-width: 520px; margin: 0 auto;">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Status do pedido #{{ pedido.id }}</h1>
+    </div>
+  </div>
+
+  <div class="linha-info" style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--border);">
+    <span class="text-muted" style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em;">Tipo</span>
+    <span style="font-weight:600;">
+      {% if pedido.tipo == 'mesa' and pedido.mesa %}Mesa {{ pedido.mesa.numero }}
+      {% elif pedido.tipo == 'retirada' %}Retirada — {{ pedido.cliente_nome }}
+      {% elif pedido.tipo == 'delivery' %}Delivery — {{ pedido.cliente_nome }}
+      {% endif %}
+    </span>
+  </div>
+
+  {% if pedido.garcom %}
+  <div class="linha-info" style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--border);">
+    <span class="text-muted" style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em;">Atendente</span>
+    <span style="font-weight:600;">{{ pedido.garcom.nome }}</span>
+  </div>
+  {% endif %}
+
+  <div class="linha-info" style="display:flex; justify-content:space-between; padding:14px 0;">
+    <span class="text-muted" style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em;">Status atual</span>
+    <span id="status-text" class="badge badge-info" style="font-size:13px; padding:6px 14px;">
+      {{ pedido.status|upper }}
+    </span>
+  </div>
+</div>
+
+<script>
+  const socket = io('/public', { path: '/socket.io', transports: ['websocket'] });
+  socket.on('status_atualizado', data => {
+    if (data.pedido_id === {{ pedido.id }}) {
+      const el = document.getElementById('status-text');
+      el.textContent = String(data.status).toUpperCase();
+      el.className = 'badge badge-info';
+    }
+  });
+</script>
+{% endblock %}

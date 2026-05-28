@@ -1,0 +1,53 @@
+============================================================
+COMANDOS DE BUILD — ComandaDigital
+============================================================
+
+>>> ATENÇÃO — SEMPRE USAR O PYINSTALLER DO .venv <<<
+
+Mesmo com o venv ativado, digitar `pyinstaller ...` direto no terminal pode
+cair no PyInstaller GLOBAL (Python312\Scripts\pyinstaller.exe) — nesse caso
+o `--collect-all zeroconf` falha em silêncio porque o Python global NÃO tem
+o zeroconf instalado, e o .exe sai sem suporte a `comanda.local:5020`.
+
+Sintoma: launcher.py mostra a linha `★ http://comanda.local:5020`, mas o
+.exe buildado não. Verificar com: `where.exe pyinstaller` (precisa apontar
+para .venv\Scripts).
+
+REGRA: sempre invocar via módulo do Python do venv:
+  .\.venv\Scripts\python.exe -m PyInstaller ...
+
+Pré-requisito (rodar 1 vez):
+  .\.venv\Scripts\python.exe -m pip install pyinstaller
+
+>>> BUILD RECOMENDADO (usa o DrinkGO.spec, mais limpo) <<<
+
+.\.venv\Scripts\python.exe -m PyInstaller DrinkGO.spec --clean --noconfirm
+
+>>> BUILD EQUIVALENTE EM LINHA ÚNICA (sem .spec) <<<
+
+.\.venv\Scripts\python.exe -m PyInstaller --onedir --clean --noconsole --name DrinkGO --icon "app\static\imagens\favicon.ico" --hidden-import flask_socketio --hidden-import socketio --hidden-import engineio --hidden-import PIL._tkinter_finder --hidden-import zeroconf --hidden-import ifaddr --collect-all flask_socketio --collect-all socketio --collect-all engineio --collect-all zeroconf --collect-submodules tkinter --add-data "app;app" --add-data "app\static;app\static" --add-data "app\templates;app\templates" --add-data "config.py;." launcher.py
+
+Notas:
+  - Usa launcher.py (não run.py) → janela GUI com IP local + QR Code, sem terminal.
+  - --noconsole esconde a janela preta de console.
+  - --icon define o ícone do .exe (precisa do favicon.ico válido em app/static/imagens/).
+  - PIL._tkinter_finder é necessário para o QR Code aparecer dentro da janela Tkinter.
+  - zeroconf + ifaddr são necessários para o mDNS (acesso via http://comanda.local:5020)
+    funcionar em iOS/Android/Windows/Mac sem precisar saber o IP.
+  - --add-data "instance;instance" foi REMOVIDO porque a pasta `instance/` é
+    criada automaticamente pelo Flask em runtime (no primeiro boot do .exe).
+    Se quiser manter no comando, crie a pasta antes com:  mkdir instance
+
+Validação pós-build (sanidade do mDNS):
+  - dist\DrinkGO\_internal\ deve conter pasta `zeroconf\` e `ifaddr\`.
+  - build\DrinkGO\warn-DrinkGO.txt NÃO pode ter "missing module named zeroconf".
+
+============================================================
+BUILDS LEGADOS (com console preto, modo antigo)
+============================================================
+
+# Onefile (lento pra abrir, gera 1 .exe único):
+pyinstaller --onefile --clean --name ComandaDigital --hidden-import eventlet --hidden-import eventlet.hubs --hidden-import eventlet.hubs.epolls --hidden-import eventlet.hubs.kqueue --hidden-import eventlet.hubs.selects --hidden-import flask_socketio --hidden-import socketio --hidden-import engineio --collect-all eventlet --collect-all flask_socketio --collect-all socketio --collect-all engineio --add-data "app;app" --add-data "app\static;app\static" --add-data "app\templates;app\templates" --add-data "instance;instance" --add-data "config.py;." run.py
+
+# Onedir (recomendado se for manter o modo antigo com console):
+pyinstaller --onedir --clean --name ComandaDigital --hidden-import flask_socketio --hidden-import socketio --hidden-import engineio --collect-all flask_socketio --collect-all socketio --collect-all engineio --add-data "app;app" --add-data "app\static;app\static" --add-data "app\templates;app\templates" --add-data "instance;instance" --add-data "config.py;." run.py

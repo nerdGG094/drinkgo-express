@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Relatório de contagens — Inventário{% endblock %}
+
+{% block content %}
+
+<div class="inventario-page">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Relatório de contagens</h1>
+      <p class="page-subtitle">Histórico das contagens diárias dos itens operacionais e produtos do cardápio</p>
+    </div>
+    <div class="page-actions">
+      <a href="{{ url_for('admin.inventario') }}" class="btn btn-outline btn-sm">← Voltar</a>
+      <a href="{{ url_for('admin.inventario_relatorio_excel', data_ini=data_ini.isoformat(), data_fim=data_fim.isoformat()) }}"
+         class="btn btn-success btn-sm">⤓ Exportar Excel</a>
+    </div>
+  </div>
+
+  {# ---------- KPIs ---------- #}
+  <div class="inv-stats">
+    <div class="inv-stat-card">
+      <span class="inv-stat-icon" aria-hidden="true">📅</span>
+      <div class="inv-stat-body">
+        <span class="inv-stat-label">Período</span>
+        <span class="inv-stat-valor inv-stat-valor-sm">
+          {{ data_ini.strftime('%d/%m/%Y') }}
+          {% if data_ini != data_fim %}→ {{ data_fim.strftime('%d/%m/%Y') }}{% endif %}
+        </span>
+        <span class="inv-stat-sub">
+          {{ ((data_fim - data_ini).days + 1) }} dia{{ 's' if (data_fim - data_ini).days else '' }}
+        </span>
+      </div>
+    </div>
+    <div class="inv-stat-card is-success">
+      <span class="inv-stat-icon" aria-hidden="true">📋</span>
+      <div class="inv-stat-body">
+        <span class="inv-stat-label">Contagens</span>
+        <span class="inv-stat-valor">{{ total_registros }}</span>
+        <span class="inv-stat-sub">registros no período</span>
+      </div>
+    </div>
+    <div class="inv-stat-card">
+      <span class="inv-stat-icon" aria-hidden="true">📆</span>
+      <div class="inv-stat-body">
+        <span class="inv-stat-label">Dias com contagem</span>
+        <span class="inv-stat-valor">{{ dias_com_contagem }}</span>
+        <span class="inv-stat-sub">no período</span>
+      </div>
+    </div>
+    <div class="inv-stat-card">
+      <span class="inv-stat-icon" aria-hidden="true">🗃️</span>
+      <div class="inv-stat-body">
+        <span class="inv-stat-label">Itens distintos</span>
+        <span class="inv-stat-valor">{{ itens_diferentes }}</span>
+        <span class="inv-stat-sub">aparecem no relatório</span>
+      </div>
+    </div>
+  </div>
+
+  {# ---------- FILTROS ---------- #}
+  <div class="form-section">
+    <header class="form-section-header">
+      <span class="form-section-icon" aria-hidden="true">🔍</span>
+      <h2 class="form-section-titulo">Filtrar período</h2>
+    </header>
+
+    <div class="form-section-body">
+      <nav class="rel-quick-chips" aria-label="Períodos rápidos">
+        <button type="button" class="rel-chip" data-quick="hoje">Hoje</button>
+        <button type="button" class="rel-chip" data-quick="7">Últimos 7 dias</button>
+        <button type="button" class="rel-chip" data-quick="30">Últimos 30 dias</button>
+        <button type="button" class="rel-chip" data-quick="mes">Este mês</button>
+      </nav>
+
+      <form method="get" class="rel-filtro-form" id="relFiltroForm" style="margin-top: var(--sp-3);">
+        <div class="rel-field">
+          <label for="data_ini">Data inicial</label>
+          <input type="date" id="data_ini" name="data_ini" value="{{ data_ini.isoformat() }}" required>
+        </div>
+        <div class="rel-field">
+          <label for="data_fim">Data final</label>
+          <input type="date" id="data_fim" name="data_fim" value="{{ data_fim.isoformat() }}" required>
+        </div>
+        <div class="rel-field-acoes">
+          <button type="submit" class="btn btn-primary btn-sm">Aplicar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# ---------- PREVIEW ---------- #}
+  <div class="form-section">
+    <header class="form-section-header">
+      <span class="form-section-icon" aria-hidden="true">📊</span>
+      <h2 class="form-section-titulo">Resumo por item</h2>
+      <span class="form-section-acoes">
+        <span class="badge badge-muted">{{ linhas|length }} item(ns)</span>
+      </span>
+    </header>
+
+    {% if linhas %}
+    <div class="tabela-wrapper">
+      <table class="tabela inv-rel-tabela">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Tipo</th>
+            <th class="qtd">Contagens</th>
+            <th class="qtd">Primeira</th>
+            <th class="qtd">Última</th>
+            <th class="qtd">Variação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ln in linhas %}
+          <tr>
+            <td>
+              <div class="inv-rel-item">
+                <span class="inv-rel-icone" aria-hidden="true">{{ ln.icone }}</span>
+                <div class="inv-rel-item-info">
+                  <span class="inv-rel-item-nome">{{ ln.nome }}</span>
+                  <span class="inv-rel-item-cat">{{ ln.categoria|upper }} · {{ ln.unidade }}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              {% if ln.kind == 'item' %}
+              <span class="inv-tipo-badge inv-tipo-item">OPERACIONAL</span>
+              {% else %}
+              <span class="inv-tipo-badge inv-tipo-produto">CARDÁPIO</span>
+              {% endif %}
+            </td>
+            <td class="qtd">{{ ln.count }}</td>
+            <td class="qtd">
+              <span class="inv-rel-num">{{ ln.primeira_qtd }}</span>
+              <span class="inv-rel-data">{{ ln.primeira_data.strftime('%d/%m') }}</span>
+            </td>
+            <td class="qtd">
+              <span class="inv-rel-num">{{ ln.ultima_qtd }}</span>
+              <span class="inv-rel-data">{{ ln.ultima_data.strftime('%d/%m') }}</span>
+            </td>
+            <td class="qtd">
+              {% if ln.variacao == 0 %}
+                <span class="inv-delta is-zero">= 0</span>
+              {% elif ln.variacao > 0 %}
+                <span class="inv-delta is-up">+{{ ln.variacao }}</span>
+              {% else %}
+                <span class="inv-delta is-down">{{ ln.variacao }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon" aria-hidden="true">📊</div>
+      <h3 class="empty-state-title">Nenhuma contagem no período</h3>
+      <p class="empty-state-desc">Ajuste o filtro acima ou registre uma contagem na tela do inventário.</p>
+      <div class="empty-state-actions">
+        <a href="{{ url_for('admin.inventario_contar') }}" class="btn btn-primary btn-sm">📋 Realizar contagem</a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relatorios.js') }}"></script>
+{% endblock %}

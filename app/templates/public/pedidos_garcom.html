@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}{% if current_user.role == 'admin' %}Pedidos do dia{% else %}Meus Pedidos{% endif %}{% endblock %}
+
+{% block content %}
+
+<div class="container-pedidos-garcom">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">
+        {% if current_user.role == 'admin' %}Pedidos do dia{% else %}Meus pedidos{% endif %}
+      </h1>
+      <p class="page-subtitle">
+        {% if current_user.role == 'admin' %}
+          Todos os pedidos lançados — por qualquer usuário
+        {% else %}
+          Pedidos lançados por você — acompanhe status em tempo real
+        {% endif %}
+      </p>
+    </div>
+
+    <form method="GET" class="filtro-data">
+      <input type="date" name="data" value="{{ data_filtro or '' }}" class="form-control">
+      <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+      <a href="{{ url_for('public.pedidos_garcom') }}" class="btn btn-outline btn-sm">Limpar</a>
+    </form>
+  </div>
+
+  <div class="grid-pedidos">
+    {% for p in pedidos %}
+
+    <article class="pedido-card">
+
+      <header class="pedido-topo">
+        <div class="pedido-tipo">
+          {% if p.tipo == 'mesa' and p.mesa %}
+            🪑 <span>Mesa {{ p.mesa.numero }}</span>
+          {% elif p.tipo == 'retirada' %}
+            📍 <span>Retirada — {{ p.cliente_nome }}</span>
+          {% elif p.tipo == 'delivery' %}
+            🚛 <span>Delivery — {{ p.cliente_nome }}</span>
+          {% endif %}
+        </div>
+
+        <span class="status-badge status-{{ p.status }}">{{ p.status|upper }}</span>
+      </header>
+
+      {% if p.pedido_fechado %}
+      <div class="linha-info">
+        <span class="badge badge-success">Pedido fechado</span>
+        {% if (p.forma_pagamento or '')|lower != 'cancelado' %}
+          {% if p.cupom_impresso_em %}
+            <span class="badge badge-info"
+                  title="Cupom impresso em {{ p.cupom_impresso_em.strftime('%d/%m %H:%M') }}">
+              ✓ Cupom OK
+            </span>
+          {% else %}
+            <span class="badge badge-warn"
+                  title="Cupom não foi impresso/visualizado">
+              ⚠ Sem cupom
+            </span>
+          {% endif %}
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if p.garcom %}
+      <div class="linha-info">
+        <span class="label">Atendente</span>
+        <span class="valor">{{ p.garcom.nome }}</span>
+      </div>
+      {% endif %}
+
+      <ul class="lista-itens">
+        {% for item in p.itens %}
+        <li><strong>{{ item.quantidade }}×</strong> {{ item.produto.nome }}</li>
+        {% endfor %}
+      </ul>
+
+      <div class="pedido-total">
+        <span class="label">Total</span>
+        <strong>R$ {{ '%.2f'|format(p.total_com_desconto()) }}</strong>
+      </div>
+
+      {% if p.desconto and p.desconto > 0 %}
+      <div class="linha-info">
+        <span class="label">Desconto</span>
+        <span class="valor text-danger">- R$ {{ '%.2f'|format(p.desconto) }}</span>
+      </div>
+      {% endif %}
+
+      {% if p.forma_pagamento %}
+        <div class="linha-info">
+          <span class="label">Pagamento</span>
+          <span class="valor">
+            {% if p.forma_pagamento == 'cancelado' %}
+              <span class="badge badge-danger">CANCELADO</span>
+            {% else %}
+              {{ p.forma_pagamento|upper }}{% if p.forma_pagamento2 %} + {{ p.forma_pagamento2|upper }}{% endif %}
+            {% endif %}
+          </span>
+        </div>
+
+        {% if p.forma_pagamento != 'cancelado' %}
+          {% if p.forma_pagamento2 and p.valor_pagamento2 %}
+            <div class="linha-info">
+              <span class="label">{{ p.forma_pagamento|upper }}</span>
+              <span class="valor">R$ {{ '%.2f'|format(p.valor_entregue or 0) }}</span>
+            </div>
+            <div class="linha-info">
+              <span class="label">{{ p.forma_pagamento2|upper }}</span>
+              <span class="valor">R$ {{ '%.2f'|format(p.valor_pagamento2) }}</span>
+            </div>
+          {% elif p.valor_entregue %}
+            <div class="linha-info">
+              <span class="label">Valor pago</span>
+              <span class="valor">R$ {{ '%.2f'|format(p.valor_entregue) }}</span>
+            </div>
+          {% endif %}
+
+          {% if p.troco and p.troco > 0 %}
+            <div class="linha-info">
+              <span class="label">Troco</span>
+              <span class="valor text-success">R$ {{ '%.2f'|format(p.troco) }}</span>
+            </div>
+          {% endif %}
+        {% endif %}
+      {% else %}
+        <div class="linha-info">
+          <span class="label">Pagamento</span>
+          <span class="valor"><em>Aguardando</em></span>
+        </div>
+      {% endif %}
+
+    </article>
+
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-state-icon" aria-hidden="true">📋</div>
+        <h2 class="empty-state-title">Nenhum pedido ainda</h2>
+        <p class="empty-state-desc">
+          {% if data_filtro %}Não há pedidos para a data selecionada.{% else %}Quando você abrir pedidos, eles aparecerão aqui.{% endif %}
+        </p>
+        <div class="empty-state-actions">
+          {% if current_user.tem_permissao('novo_pedido') %}
+            <a href="{{ url_for('public.novo') }}" class="btn btn-primary btn-sm">+ Novo pedido</a>
+          {% endif %}
+          {% if data_filtro %}
+            <a href="{{ url_for('public.pedidos_garcom') }}" class="btn btn-outline btn-sm">Ver todos</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/pedidos_garcom.js') }}"></script>
+{% endblock %}

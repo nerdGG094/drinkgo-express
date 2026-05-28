@@ -1,0 +1,52 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+ENV/
+
+# ---- PyInstaller build ----
+build/
+dist/
+*.spec.bak
+
+# ---- Banco de dados (dados locais — NÃO sincronizar) ----
+*.db
+*.sqlite
+*.sqlite3
+instance/
+comanda.db
+
+# ---- Uploads dos usuários (dados locais) ----
+uploads/
+backups/
+
+# ---- Configurações sensíveis ----
+pix_settings.json
+.secret_key
+.env
+.env.*
+*.key
+*.pem
+
+# ---- Claude Code (local) ----
+.claude/
+
+# ---- Editor / OS ----
+.vscode/
+.idea/
+*.swp
+*.swo
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# ---- Logs ----
+*.log
+logs/

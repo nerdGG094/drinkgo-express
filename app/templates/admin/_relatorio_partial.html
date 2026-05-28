@@ -1,0 +1,153 @@
+{# ============================================================
+   PARTIAL — KPIs + filtros + ranking dos relatórios
+   Variáveis esperadas:
+     itens_ord, max_qtd, total_qtd, total_valor, dias, top,
+     data_ini, data_fim, request
+   ============================================================ #}
+
+{# ---------- KPIs ---------- #}
+<div class="rel-stats">
+  <div class="rel-stat-card">
+    <span class="rel-stat-icon" aria-hidden="true">📅</span>
+    <div class="rel-stat-body">
+      <span class="rel-stat-label">Período</span>
+      <span class="rel-stat-valor rel-stat-valor-sm">{{ dias }} {{ 'dia' if dias == 1 else 'dias' }}</span>
+      <span class="rel-stat-sub">
+        {{ data_ini.strftime('%d/%m/%Y') }} → {{ data_fim.strftime('%d/%m/%Y') }}
+      </span>
+    </div>
+  </div>
+
+  <div class="rel-stat-card is-primary">
+    <span class="rel-stat-icon" aria-hidden="true">📦</span>
+    <div class="rel-stat-body">
+      <span class="rel-stat-label">Itens</span>
+      <span class="rel-stat-valor">{{ total_qtd or 0 }}</span>
+      <span class="rel-stat-sub">unidades no período</span>
+    </div>
+  </div>
+
+  <div class="rel-stat-card is-accent">
+    <span class="rel-stat-icon" aria-hidden="true">💰</span>
+    <div class="rel-stat-body">
+      <span class="rel-stat-label">Valor total</span>
+      <span class="rel-stat-valor">R$ {{ "%.2f"|format(total_valor or 0) }}</span>
+      <span class="rel-stat-sub">somatório do período</span>
+    </div>
+  </div>
+
+  <div class="rel-stat-card is-info">
+    <span class="rel-stat-icon" aria-hidden="true">🏆</span>
+    <div class="rel-stat-body">
+      <span class="rel-stat-label">Top produto</span>
+      {% if top %}
+        <span class="rel-stat-valor rel-stat-valor-sm" title="{{ top.produto_nome }}">{{ top.produto_nome }}</span>
+        <span class="rel-stat-sub">{{ top.qtd }} unidades</span>
+      {% else %}
+        <span class="rel-stat-valor rel-stat-valor-sm">—</span>
+        <span class="rel-stat-sub">sem registros</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{# ---------- FILTROS ---------- #}
+<div class="rel-filtros-card">
+  <header class="rel-card-header">
+    <span class="rel-card-icon" aria-hidden="true">🔍</span>
+    <h2 class="rel-card-titulo">Filtrar período</h2>
+  </header>
+
+  <div class="rel-filtros-body">
+    <nav class="rel-quick-chips" aria-label="Períodos rápidos">
+      <button type="button" class="rel-chip" data-quick="hoje">Hoje</button>
+      <button type="button" class="rel-chip" data-quick="7">Últimos 7 dias</button>
+      <button type="button" class="rel-chip" data-quick="30">Últimos 30 dias</button>
+      <button type="button" class="rel-chip" data-quick="mes">Este mês</button>
+    </nav>
+
+    <form method="get" class="rel-filtro-form" id="relFiltroForm">
+      <div class="rel-field">
+        <label for="data_ini">Data inicial</label>
+        <input type="date" id="data_ini" name="data_ini"
+               value="{{ data_ini.isoformat() }}" required>
+      </div>
+
+      <div class="rel-field">
+        <label for="data_fim">Data final</label>
+        <input type="date" id="data_fim" name="data_fim"
+               value="{{ data_fim.isoformat() }}" required>
+      </div>
+
+      <div class="rel-field-acoes">
+        <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ---------- BREAKDOWN POR FORMA DE PAGAMENTO ---------- #}
+{% if pagamentos is defined and pagamentos %}
+<div class="rel-pagamentos-card">
+  <header class="rel-card-header">
+    <span class="rel-card-icon" aria-hidden="true">💳</span>
+    <h2 class="rel-card-titulo">Recebido por forma de pagamento</h2>
+    <span class="rel-card-meta">Total: R$ {{ "%.2f"|format(total_pagamentos or 0) }}</span>
+  </header>
+
+  <ul class="rel-pagamentos-lista">
+    {% for fp in pagamentos %}
+    <li class="rel-pagamento-item">
+      <span class="rel-pagamento-nome">{{ fp.label }}</span>
+      <span class="rel-pagamento-valor">R$ {{ "%.2f"|format(fp.total) }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{# ---------- RANKING ---------- #}
+<div class="rel-ranking-card">
+  <header class="rel-card-header">
+    <span class="rel-card-icon" aria-hidden="true">📊</span>
+    <h2 class="rel-card-titulo">Ranking de produtos</h2>
+    {% if itens_ord %}
+    <span class="rel-card-meta">{{ itens_ord|length }} produtos</span>
+    {% endif %}
+  </header>
+
+  {% if itens_ord %}
+  <ol class="rel-ranking">
+    {% for item in itens_ord %}
+    {% set pos = loop.index %}
+    {% set pct = ((item.qtd / max_qtd) * 100)|round(0)|int if max_qtd > 0 else 0 %}
+    <li class="rel-ranking-item {% if pos == 1 %}is-gold{% elif pos == 2 %}is-silver{% elif pos == 3 %}is-bronze{% endif %}">
+
+      <span class="rel-rank-pos" aria-label="Posição {{ pos }}">
+        {% if pos == 1 %}🥇{% elif pos == 2 %}🥈{% elif pos == 3 %}🥉{% else %}#{{ pos }}{% endif %}
+      </span>
+
+      <div class="rel-rank-body">
+        <span class="rel-rank-nome">{{ item.produto_nome }}</span>
+        <div class="rel-rank-bar" aria-hidden="true">
+          <div class="rel-rank-bar-fill" style="width: {{ pct }}%"></div>
+        </div>
+      </div>
+
+      <span class="rel-rank-qtd">
+        <span class="rel-rank-qtd-num">{{ item.qtd }}</span>
+        <span class="rel-rank-qtd-label">un</span>
+      </span>
+
+      <span class="rel-rank-valor">R$ {{ "%.2f"|format(item.total or 0) }}</span>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon" aria-hidden="true">📊</div>
+    <h3 class="empty-state-title">Nenhum registro no período</h3>
+    <p class="empty-state-desc">Tente ampliar o intervalo de datas ou usar um dos atalhos rápidos acima.</p>
+  </div>
+  {% endif %}
+</div>

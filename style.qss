@@ -1,0 +1,342 @@
+QWidget {
+    background-color: #1e1e2f;
+    color: #d4d4d4;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;☻
+    font-size: 13px;
+}
+
+QGroupBox {
+    border: 1px solid #3c3c55;
+    margin-top: 4px;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 12px 10px 10px 10px;
+    color: #c1bfde;
+    background-color: #252536;
+    border-radius: 6px;
+}
+
+QTableWidget {
+    background-color: #1e1e2f;
+    alternate-background-color: #2a2a45;
+    border: 1px solid #3c3c55;
+    color: #d4d4d4;
+    gridline-color: #3c3c55;
+    font-size: 13px;
+    selection-background-color: #0e639c;
+    selection-color: #ffffff;
+}
+
+QHeaderView::section {
+    background-color: #3c3c55;
+    color: #c5c5c5;
+    padding: 5px;
+    border: 1px solid #444466;
+    font-weight: 700;
+    font-size: 14px;
+    text-align: center;
+}
+
+QLabel {
+    font-size: 13px;
+    color: #d4d4d4;
+}
+
+QLineEdit, QComboBox {
+    background-color: #2d2d44;
+    color: #d4d4d4;
+    border: 1px solid #444466;
+    padding: 6px 8px;
+    font-size: 13px;
+    border-radius: 4px;
+    selection-background-color: #0e639c;☻
+    selection-color: #fff;
+    min-height: 26px;
+}
+
+QLineEdit:focus, QComboBox:focus {
+    border: 1.5px solid #569cd6;
+    background-color: #333353;
+}
+
+QPushButton {
+    background-color: #1e1e2f;
+    color: white;
+    padding: 8px 18px;
+    font-size: 14px;
+    border-radius: 5px;
+    border: 1px solid #c1bfde;
+    min-height: 32px;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+    box-shadow: none;
+}
+
+QPushButton:hover {
+    background-color: #c1bfde;
+}
+
+QPushButton:pressed {
+    background-color: #c1bfde;
+}
+
+QScrollArea {
+    background-color: #1e1e2f;
+    border: none;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #2d2d44;
+    selection-background-color: #007acc;
+    color: #c1bfde;
+    border: 1px solid #444466;
+    outline: none;
+}
+
+/* ============================
+   TÍTULO PRINCIPAL – TEMA DARK
+   ============================ */
+
+QLabel#titulo_principal {
+    font-weight: bold;
+    font-size: 16px;
+    color: #c1bfde;           /* mesma cor usada no dark */
+    background-color: transparent;
+}
+
+/* ============================
+   BOTÃO EXECUTAR (ADD CAMINHÃO)
+   ============================ */
+
+QPushButton#btn_executar {
+    background-color: #2d2d44;
+    border: 1px solid #444466;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+QPushButton#btn_executar:hover {
+    background-color: #3a3a5c;
+    border: 1px solid #569cd6;
+}
+
+QPushButton#btn_executar:pressed {
+    background-color: #1e1e3a;
+}
+
+/* ============================
+   BOTÃO ESTOQUE_ENVIA – DARK
+   ============================ */
+
+QPushButton#btn_estoque_envia {
+    background-color: #2d2d44;
+    border: 1px solid #444466;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+QPushButton#btn_estoque_envia:hover {
+    background-color: #3a3a5c;
+    border: 1px solid #569cd6;
+}
+
+QPushButton#btn_estoque_envia:pressed {
+    background-color: #1e1e3a;
+}
+
+/* =====================================
+   BOTÃO ABRIR_QUANTIDADES – DARK THEME
+   ===================================== */
+
+QPushButton#btn_abrir_quantidades {
+    background-color: #2d2d44;
+    border: 1px solid #444466;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+QPushButton#btn_abrir_quantidades:hover {
+    background-color: #3a3a5c;
+    border: 1px solid #569cd6;
+}
+
+QPushButton#btn_abrir_quantidades:pressed {
+    background-color: #1e1e3a;
+}
+/* ================================
+   LABEL DA DATA E HORA – DARK
+   ================================ */
+
+QLabel#label_data_hora {
+    font-weight: bold;
+    font-size: 14px;
+    color: #c1bfde;     /* mesma cor original */
+    background-color: transparent;
+}
+/* ========================================
+   CHECKBOX flag_salvar_logs – THEME DARK
+   ======================================== */
+
+
+
+/* ============================================
+   LABEL DO USUÁRIO CONECTADO – THEME DARK
+   ============================================ */
+
+QLabel#label_usuario_conectado {
+    font-weight: bold;
+    font-size: 14px;
+    color: #1E88E5;       /* mesma cor original */
+    background-color: transparent;
+}
+
+/* ===============================
+   LABEL CIDADES – DARK THEME
+   =============================== */
+
+QLabel#label_cidades {
+    background-color: transparent;
+    font-size: 15px;
+    padding: 4px;
+    color: #c1bfde;          /* mesma cor original */
+    border-radius: 3px;
+}
+/* ========================================
+   BOTÃO RESUMO PEDIDOS – TEMA DARK
+   ======================================== */
+
+QPushButton#btn_relatoriopedido {
+    font-weight: bold;
+    background-color: #1e1e2f;
+    border: 1px solid #c1bfde;
+    color: white;
+    padding: 6px;
+    border-radius: 5px;
+}
+
+QPushButton#btn_relatoriopedido:hover {
+    background-color: #2a2a44;
+}
+
+QPushButton#btn_relatoriopedido:pressed {
+    background-color: #c1bfde;
+    color: #1e1e2f;
+}
+/* ========================================
+   BOTÃO RELATÓRIO – TEMA DARK
+   ======================================== */
+
+QPushButton#btn_relatorio {
+    font-weight: bold;
+    background-color: #1e1e2f;
+    border: 1px solid #c1bfde;
+    color: white;
+    padding: 6px;
+    border-radius: 5px;
+}
+
+QPushButton#btn_relatorio:hover {
+    background-color: #2a2a44;
+}
+
+QPushButton#btn_relatorio:pressed {
+    background-color: #c1bfde;
+    color: #1e1e2f;
+}
+
+QPushButton#btn_tema {
+    padding: 0;
+    min-height: 0;
+    min-width: 0;
+    background-color: #1e1e2f;
+    border: 1px solid #1e1e2f;
+    border-radius: 4px;
+}
+
+QPushButton#btn_tema:hover {
+    background-color: #1e1e2f;
+}
+
+QPushButton#btn_tema:pressed {
+    background-color: #1e1e2f;
+}
+
+QPushButton#btn_abrir_gole {
+    background-color: #2d2d44;
+    border: 1px solid #444466;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+QPushButton#btn_abrir_gole:hover {
+    background-color: #3a3a5c;
+    border: 1px solid #569cd6;
+}
+
+QPushButton#btn_abrir_gole:pressed {
+    background-color: #1e1e3a;
+}
+
+QPushButton#btn_abrir_chopp {
+    background-color: #2d2d44;
+    border: 1px solid #444466;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+QPushButton#btn_abrir_chopp:hover {
+    background-color: #3a3a5c;
+    border: 1px solid #569cd6;
+}
+
+QPushButton#btn_abrir_chopp:pressed {
+    background-color: #1e1e3a;
+}
+
+QPushButton#btn_cad_users {
+    background-color: #2d2d44;
+    border: 1px solid #444466;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+QPushButton#btn_cad_users:hover {
+    background-color: #3a3a5c;
+    border: 1px solid #569cd6;
+}
+
+QPushButton#btn_cad_users:pressed {
+    background-color: #1e1e3a;
+}
+
+QPushButton#btn_controle_importacao {
+    background-color: #2d2d44;
+    border: 1px solid #444466;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+QPushButton#btn_controle_importacao:hover {
+    background-color: #3a3a5c;
+    border: 1px solid #569cd6;
+}
+
+QPushButton#btn_controle_importacao:pressed {
+    background-color: #1e1e3a;
+}
+
+QPushButton#btn_escala_do_dia {
+    background-color: #2d2d44;
+    border: 1px solid #444466;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+QPushButton#btn_escala_do_dia:hover {
+    background-color: #3a3a5c;
+    border: 1px solid #569cd6;
+}
+
+QPushButton#btn_escala_do_dia:pressed {
+    background-color: #1e1e3a;
+}

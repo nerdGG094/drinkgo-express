@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar Categoria' if categoria else 'Nova Categoria' }}{% endblock %}
+
+{% block content %}
+
+<div class="categoria-container">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">{{ 'Editar categoria' if categoria else 'Nova categoria' }}</h1>
+      <p class="page-subtitle">Organize seu cardápio em grupos</p>
+    </div>
+    <div class="page-actions">
+      <a href="{{ url_for('admin.produtos') }}" class="btn btn-outline btn-sm">← Voltar</a>
+    </div>
+  </div>
+
+  <div class="card-form card">
+    <form method="post" class="form">
+
+      <div class="grupo-form input-group">
+        <label>Nome da categoria</label>
+        <input type="text" name="nome" required
+               value="{{ categoria.nome if categoria else '' }}"
+               placeholder="Ex.: Bebidas, Lanches, Porções">
+      </div>
+
+      <div class="grupo-form check">
+        <label class="switch">
+          <input type="checkbox" name="ativo"
+                 {% if categoria and categoria.ativo %}checked{% endif %}
+                 {% if not categoria %}checked{% endif %}>
+          <span class="slider"></span>
+        </label>
+        <span class="lbl-ativo">Categoria ativa</span>
+      </div>
+
+      <div class="acoes-form">
+        <button type="submit" class="btn btn-primary btn-lg btn-block">
+          Salvar categoria
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+
+{% endblock %}

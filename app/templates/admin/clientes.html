@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Clientes{% endblock %}
+
+{% block content %}
+<div class="content-center">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Clientes</h1>
+      <p class="page-subtitle">Cadastro e busca rápida</p>
+    </div>
+    <div class="page-actions">
+      <a href="{{ url_for('admin.clientes_novo') }}" class="btn btn-primary btn-sm">+ Novo cliente</a>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: var(--sp-5);">
+    <form method="get" class="form-inline">
+      <div style="flex:1; min-width:240px; display:flex; flex-direction:column; gap:6px;">
+        <label class="form-label">Buscar cliente</label>
+        <input type="text" name="q" value="{{ q or '' }}"
+               placeholder="Nome, código ou telefone…">
+      </div>
+      <button type="submit" class="btn btn-primary">Buscar</button>
+      {% if q %}
+      <a href="{{ url_for('admin.clientes') }}" class="btn btn-outline">Limpar</a>
+      {% endif %}
+    </form>
+  </div>
+
+  <div class="tabela-wrapper" style="margin-top: 0;">
+    <table class="tabela">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Nome</th>
+          <th>Telefone</th>
+          <th>Endereço</th>
+          <th>Status</th>
+          <th style="text-align:right;">Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in clientes %}
+        <tr>
+          <td>{{ c.codigo or '—' }}</td>
+          <td><strong>{{ c.nome }}</strong></td>
+          <td>{{ c.telefone or '—' }}</td>
+          <td>{{ c.endereco or '—' }}</td>
+          <td>
+            {% if c.ativo %}
+              <span class="badge badge-success">Ativo</span>
+            {% else %}
+              <span class="badge badge-danger">Inativo</span>
+            {% endif %}
+          </td>
+          <td style="text-align:right;">
+            <a href="{{ url_for('admin.clientes_editar', cliente_id=c.id) }}" class="btn btn-info btn-sm">
+              Editar
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="vazio">Nenhum cliente encontrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

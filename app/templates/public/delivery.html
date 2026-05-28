@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Delivery{% endblock %}
+
+{% block content %}
+
+<div class="delivery-container">
+  <div class="delivery-card card">
+
+    <div class="delivery-header">
+      <div class="delivery-icon">🛵</div>
+      <div>
+        <h1 class="page-title">Delivery</h1>
+        <p class="page-subtitle">Preencha os dados do cliente e da entrega</p>
+      </div>
+    </div>
+
+    <form method="post" class="form delivery-form">
+
+      <div class="form-group">
+        <label>Nome do cliente</label>
+        <input type="text" name="nome" placeholder="Ex.: João da Silva" required>
+      </div>
+
+      <div class="form-group">
+        <label>Telefone</label>
+        <input type="text" name="telefone" placeholder="(00) 00000-0000" required>
+      </div>
+
+      <div class="form-group">
+        <label>Endereço</label>
+        <textarea name="endereco" rows="3" placeholder="Rua, número, bairro, complemento…" required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Observação</label>
+        <textarea name="obs" rows="2" placeholder="Ex.: apto 10 bloco 2, portão cinza…"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg">
+        Avançar para o cardápio →
+      </button>
+
+    </form>
+  </div>
+</div>
+
+{% endblock %}

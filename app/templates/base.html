@@ -1,0 +1,397 @@
+{% import "_icons.html" as ic %}
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}CHOPP PALAZZO EXPRESS — Comanda Digital{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <!-- PWA / mobile -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0b1020">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='imagens/favicon.ico') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='imagens/favicon.ico') }}">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  {% block extra_css %}{% endblock %}
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
+</head>
+
+<body class="{% block body_class %}{% endblock %}">
+
+  <a href="#main" class="skip-link">Ir para o conteúdo</a>
+
+  <!-- ==================== TOPBAR ==================== -->
+  <header class="topbar">
+    <div class="logo">
+      CHOPP PALAZZO <span>EXPRESS</span>
+    </div>
+
+    {% if current_user.is_authenticated %}
+    <div class="topbar-actions">
+      <details class="topbar-user-menu" id="topbarUserMenu">
+        <summary class="topbar-user-trigger" title="{{ current_user.nome }}">
+          {% if current_user.foto %}
+            <img class="topbar-user-avatar topbar-user-avatar-img"
+                 src="{{ url_for('imagem_usuario', filename=current_user.foto) }}"
+                 alt="">
+          {% else %}
+            <span class="topbar-user-avatar" aria-hidden="true">{{ current_user.nome[:1]|upper }}</span>
+          {% endif %}
+          <span class="topbar-user-name">{{ current_user.nome }}</span>
+          <span class="topbar-user-caret" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ic"><polyline points="6 9 12 15 18 9"/></svg>
+          </span>
+        </summary>
+
+        <div class="topbar-user-dropdown" role="menu">
+          <div class="topbar-user-info">
+            {% if current_user.foto %}
+              <img class="topbar-user-avatar topbar-user-avatar-lg topbar-user-avatar-img"
+                   src="{{ url_for('imagem_usuario', filename=current_user.foto) }}"
+                   alt="">
+            {% else %}
+              <span class="topbar-user-avatar topbar-user-avatar-lg" aria-hidden="true">{{ current_user.nome[:1]|upper }}</span>
+            {% endif %}
+            <div class="topbar-user-info-text">
+              <span class="topbar-user-fullname">{{ current_user.nome }}</span>
+              <span class="topbar-user-role">{{ current_user.role|upper }}</span>
+            </div>
+          </div>
+
+          <a class="topbar-user-action"
+             href="{{ url_for('auth.perfil') }}"
+             role="menuitem">
+            <span class="menu-icon">{{ ic.perfil() }}</span>
+            <span>Editar perfil</span>
+          </a>
+
+          <a class="topbar-user-action topbar-user-logout"
+             href="{{ url_for('auth.logout') }}"
+             data-confirm="Deseja realmente encerrar a sessão?"
+             role="menuitem">
+            <span class="menu-icon">{{ ic.sair() }}</span>
+            <span>Sair</span>
+          </a>
+        </div>
+      </details>
+
+      <button id="btnMenu" class="btn-menu-mobile" aria-label="Abrir menu" aria-expanded="false">
+        <span aria-hidden="true">☰</span>
+      </button>
+    </div>
+    {% endif %}
+  </header>
+
+  <!-- ==================== LAYOUT ==================== -->
+  <div class="app-layout">
+
+    {% if current_user.is_authenticated %}
+    <aside class="sidebar" id="sidebarMenu" aria-label="Menu principal">
+      <div class="sidebar-logo">
+        <img src="{{ url_for('static', filename='imagens/chopp-logo.gif') }}" alt="Logo">
+      </div>
+
+      <nav>
+        {% set can_dashboard = current_user.tem_permissao('dashboard') %}
+        {% set can_caixa     = current_user.tem_permissao('caixa') %}
+        {% set can_relat     = current_user.tem_permissao('relatorios') %}
+        {% set can_produtos  = current_user.tem_permissao('produtos') %}
+        {% set can_chopeiras = current_user.tem_permissao('chopeiras') %}
+        {% set can_entradas  = current_user.tem_permissao('entradas') %}
+        {% set can_inv       = current_user.tem_permissao('inventario') %}
+        {% set can_novo      = current_user.tem_permissao('novo_pedido') %}
+        {% set is_garcom     = current_user.role == 'garcom' %}
+
+        {% if can_dashboard %}
+          <a class="menu-item" href="{{ url_for('admin.dashboard') }}">
+            <span class="menu-icon">{{ ic.dashboard() }}</span>
+            <span class="menu-text">Dashboard</span>
+          </a>
+        {% endif %}
+
+        {% if can_novo or can_caixa or is_garcom %}
+        <details class="menu-group">
+          <summary class="menu-group-header">
+            <span class="menu-group-label">
+              <span class="menu-icon">{{ ic.vendas() }}</span>
+              <span class="menu-text">Vendas</span>
+            </span>
+            <span class="menu-group-toggle" aria-hidden="true">›</span>
+          </summary>
+          <div class="menu-group-items">
+            {% if can_novo %}
+              <a class="submenu-item" href="{{ url_for('public.novo') }}">
+                <span class="menu-icon">{{ ic.novo_pedido() }}</span>
+                <span class="menu-text">Novo Pedido</span>
+              </a>
+            {% endif %}
+            {% if can_novo or is_garcom %}
+              <a class="submenu-item" href="{{ url_for('public.pedidos_garcom') }}">
+                <span class="menu-icon">{{ ic.meus_pedidos() }}</span>
+                <span class="menu-text">Meus Pedidos</span>
+              </a>
+            {% endif %}
+            {% if can_caixa %}
+              <a class="submenu-item" href="{{ url_for('admin.pedidos') }}">
+                <span class="menu-icon">{{ ic.caixa() }}</span>
+                <span class="menu-text">Caixa</span>
+              </a>
+            {% endif %}
+          </div>
+        </details>
+        {% endif %}
+
+        {% if can_relat %}
+        <details class="menu-group">
+          <summary class="menu-group-header">
+            <span class="menu-group-label">
+              <span class="menu-icon">{{ ic.relatorios() }}</span>
+              <span class="menu-text">Relatórios</span>
+            </span>
+            <span class="menu-group-toggle" aria-hidden="true">›</span>
+          </summary>
+          <div class="menu-group-items">
+            <a class="submenu-item" href="{{ url_for('admin.relatorio_itens') }}">
+              <span class="menu-icon">{{ ic.itens_vendidos() }}</span>
+              <span class="menu-text">Itens vendidos</span>
+            </a>
+            <a class="submenu-item" href="{{ url_for('admin.bonif_relatorio_itens') }}">
+              <span class="menu-icon">{{ ic.bonificacao() }}</span>
+              <span class="menu-text">Bonificação</span>
+            </a>
+            {% if current_user.role == 'admin' %}
+            <a class="submenu-item" href="{{ url_for('admin.relatorio_usuarios') }}">
+              <span class="menu-icon">{{ ic.usuarios() }}</span>
+              <span class="menu-text">Pedidos por usuário</span>
+            </a>
+            {% endif %}
+          </div>
+        </details>
+        {% endif %}
+
+        {% if can_produtos %}
+          <a class="menu-item" href="{{ url_for('admin.produtos') }}">
+            <span class="menu-icon">{{ ic.produtos() }}</span>
+            <span class="menu-text">Produtos</span>
+          </a>
+        {% endif %}
+
+        {% if can_entradas or can_inv or can_chopeiras %}
+        <details class="menu-group">
+          <summary class="menu-group-header">
+            <span class="menu-group-label">
+              <span class="menu-icon">{{ ic.estoque() }}</span>
+              <span class="menu-text">Estoque</span>
+            </span>
+            <span class="menu-group-toggle" aria-hidden="true">›</span>
+          </summary>
+          <div class="menu-group-items">
+            {% if can_entradas %}
+              <a class="submenu-item" href="{{ url_for('admin.entrada_produtos') }}">
+                <span class="menu-icon">{{ ic.entrada() }}</span>
+                <span class="menu-text">Entrada de Produtos</span>
+              </a>
+            {% endif %}
+            {% if can_inv %}
+              <a class="submenu-item" href="{{ url_for('admin.inventario') }}">
+                <span class="menu-icon">{{ ic.inventario() }}</span>
+                <span class="menu-text">Inventário</span>
+              </a>
+            {% endif %}
+            {% if can_chopeiras %}
+              <a class="submenu-item" href="{{ url_for('admin.chopeiras') }}">
+                <span class="menu-icon">{{ ic.chopeiras() }}</span>
+                <span class="menu-text">Aluguel de Chopeiras</span>
+              </a>
+            {% endif %}
+          </div>
+        </details>
+        {% endif %}
+
+        {% if current_user.role == 'admin' %}
+        <details class="menu-group">
+          <summary class="menu-group-header">
+            <span class="menu-group-label">
+              <span class="menu-icon">{{ ic.admin() }}</span>
+              <span class="menu-text">Admin</span>
+            </span>
+            <span class="menu-group-toggle" aria-hidden="true">›</span>
+          </summary>
+          <div class="menu-group-items">
+            <a class="submenu-item" href="{{ url_for('admin.usuarios') }}">
+              <span class="menu-icon">{{ ic.usuarios() }}</span>
+              <span class="menu-text">Usuários</span>
+            </a>
+            <a class="submenu-item" href="{{ url_for('admin.config_pix') }}">
+              <span class="menu-icon">{{ ic.pix() }}</span>
+              <span class="menu-text">Chave Pix</span>
+            </a>
+          </div>
+        </details>
+        {% endif %}
+      </nav>
+    </aside>
+    {% endif %}
+
+    <!-- ==================== CONTEÚDO ==================== -->
+    <main class="content" id="main">
+      <div class="content-center">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-area" role="status" aria-live="polite">
+          {% for cat, msg in messages %}
+          <div class="flash {{ cat }}" role="alert">
+            <span class="flash-msg">{{ msg }}</span>
+            <button type="button" class="flash-close" aria-label="Fechar">×</button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+
+  </div>
+
+  <!-- ==================== JS GLOBAL ==================== -->
+  <script>
+    (function () {
+      /* ---------- Sidebar mobile ---------- */
+      const btnMenu = document.getElementById("btnMenu");
+      const sidebar = document.getElementById("sidebarMenu");
+
+      if (btnMenu && sidebar) {
+        const closeSidebar = () => {
+          sidebar.classList.remove("open");
+          document.body.classList.remove("menu-open");
+          btnMenu.setAttribute("aria-expanded", "false");
+        };
+
+        btnMenu.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const opened = sidebar.classList.toggle("open");
+          document.body.classList.toggle("menu-open", opened);
+          btnMenu.setAttribute("aria-expanded", String(opened));
+        });
+
+        document.addEventListener("click", (e) => {
+          if (!sidebar.classList.contains("open")) return;
+          if (sidebar.contains(e.target) || btnMenu.contains(e.target)) return;
+          closeSidebar();
+        });
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && sidebar.classList.contains("open")) closeSidebar();
+        });
+
+        const current = window.location.pathname;
+        sidebar.querySelectorAll('a.menu-item, a.submenu-item').forEach(a => {
+          if (a.getAttribute('href') === current) {
+            a.classList.add('active');
+            a.setAttribute('aria-current', 'page');
+            const parent = a.closest('details.menu-group');
+            if (parent) parent.open = true;
+          }
+        });
+      }
+
+      /* ---------- Flash messages: fechar manual + auto-dismiss ---------- */
+      document.querySelectorAll('.flash').forEach((el) => {
+        const dismiss = () => {
+          el.classList.add('flash-dismissing');
+          setTimeout(() => el.remove(), 250);
+        };
+        const btn = el.querySelector('.flash-close');
+        if (btn) btn.addEventListener('click', dismiss);
+        if (!el.classList.contains('error') && !el.classList.contains('danger')) {
+          setTimeout(dismiss, 5500);
+        }
+      });
+
+      /* ---------- Topbar user menu: fechar ao clicar fora / ESC ---------- */
+      const userMenu = document.getElementById('topbarUserMenu');
+      if (userMenu) {
+        document.addEventListener('click', (e) => {
+          if (!userMenu.open) return;
+          if (userMenu.contains(e.target)) return;
+          userMenu.open = false;
+        });
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && userMenu.open) userMenu.open = false;
+        });
+      }
+
+      /* ---------- Confirmação em links com data-confirm ---------- */
+      document.addEventListener('click', (e) => {
+        const a = e.target.closest('[data-confirm]');
+        if (!a) return;
+        const msg = a.getAttribute('data-confirm') || 'Tem certeza?';
+        if (!window.confirm(msg)) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      });
+
+      /* ---------- Loading state em forms (evita duplo submit) ---------- */
+      document.addEventListener('submit', (e) => {
+        const form = e.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        if (form.dataset.noLoading === 'true') return;
+
+        // Preserva o name/value do botão clicado como hidden input.
+        // Sem isso, ao desabilitar o botão abaixo, o browser deixa de
+        // enviar o name/value dele no form data — quebra <button name="x">.
+        const submitter = e.submitter;
+        if (submitter && submitter.name) {
+          const hidden = document.createElement('input');
+          hidden.type = 'hidden';
+          hidden.name = submitter.name;
+          hidden.value = submitter.value || '';
+          hidden.dataset.submitterShim = '1';
+          form.appendChild(hidden);
+        }
+
+        const btns = form.querySelectorAll(
+          'button[type=submit], input[type=submit]'
+        );
+        btns.forEach(btn => {
+          if (btn.disabled) return;
+          btn.dataset.originalText = btn.innerHTML || btn.value || '';
+          btn.disabled = true;
+          btn.classList.add('is-loading');
+          if (btn.tagName === 'BUTTON') {
+            btn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span> ' +
+                            (btn.dataset.loadingText || 'Enviando…');
+          }
+        });
+
+        // failsafe: se navegação demorar/falhar, libera depois de 12s
+        setTimeout(() => {
+          btns.forEach(btn => {
+            if (!btn.dataset.originalText) return;
+            btn.disabled = false;
+            btn.classList.remove('is-loading');
+            if (btn.tagName === 'BUTTON') btn.innerHTML = btn.dataset.originalText;
+            delete btn.dataset.originalText;
+          });
+          // remove hidden inputs criados pelo shim
+          form.querySelectorAll('input[data-submitter-shim="1"]').forEach(el => el.remove());
+        }, 12000);
+      });
+    })();
+  </script>
+
+  {% block extra_js %}{% endblock %}
+
+</body>
+</html>

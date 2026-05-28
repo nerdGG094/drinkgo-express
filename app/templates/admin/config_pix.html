@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Configuração — Chave Pix{% endblock %}
+
+{% block content %}
+
+<div class="usuario-form-page">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Chave Pix da loja</h1>
+      <p class="page-subtitle">Define a chave que será usada nos QR Codes dos cupons. Mudanças valem imediatamente para os próximos pedidos.</p>
+    </div>
+    <div class="page-actions">
+      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline btn-sm">← Voltar</a>
+    </div>
+  </div>
+
+  <form method="post" class="usuario-form-grid">
+
+    {# ============ COLUNA ESQUERDA: PREVIEW DO QR ============ #}
+    <aside class="usuario-preview">
+      <h2 class="usuario-preview-nome" style="font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted);">
+        Preview do QR Code
+      </h2>
+
+      {% if qr_preview %}
+      <div class="pix-qr-preview-wrap">
+        <img src="{{ qr_preview }}" alt="Preview do QR Pix" class="pix-qr-preview-img">
+      </div>
+      <span class="usuario-preview-email" style="text-align:center;">
+        Exemplo de R$ 1,00
+      </span>
+      {% else %}
+      <div class="pix-qr-preview-wrap pix-qr-vazio">
+        <span>Sem chave configurada</span>
+      </div>
+      <span class="usuario-preview-email">Preencha os campos ao lado para gerar o QR.</span>
+      {% endif %}
+
+      <div class="usuario-preview-stat" style="margin-top: var(--sp-2);">
+        <span class="usuario-preview-stat-label">Persistência</span>
+        <div class="config-persistencia-status">
+          {% if salvo_em_arquivo %}
+            <span class="badge badge-success">✓ Salvo</span>
+            <small>Arquivo lido a cada inicialização — chave NÃO se perde ao reiniciar o app.</small>
+          {% else %}
+            <span class="badge badge-warn">Usando padrão</span>
+            <small>Atualmente lendo do <code>config.py</code>. Salve abaixo para persistir mudanças.</small>
+          {% endif %}
+        </div>
+      </div>
+    </aside>
+
+    {# ============ COLUNA DIREITA: FORMULÁRIO ============ #}
+    <div class="usuario-main">
+
+      <section class="form-section">
+        <header class="form-section-header">
+          <span class="form-section-icon" aria-hidden="true">⚡</span>
+          <h2 class="form-section-titulo">Dados Pix</h2>
+        </header>
+        <div class="form-section-body">
+          <div class="usuario-fields-grid">
+
+            <div class="usuario-field" style="grid-column: 1 / -1;">
+              <label for="chaveInput">Chave Pix</label>
+              <input id="chaveInput" type="text" name="chave"
+                     value="{{ chave }}" required
+                     placeholder="CPF/CNPJ, e-mail, telefone (+55…) ou chave aleatória">
+              <small class="usuario-hint">
+                Aceita qualquer formato válido de chave Pix. Sem espaços ao redor.
+              </small>
+            </div>
+
+            <div class="usuario-field">
+              <label for="nomeInput">Nome do recebedor</label>
+              <input id="nomeInput" type="text" name="nome"
+                     value="{{ nome }}" maxlength="25"
+                     placeholder="CHOPP PALAZZO EXPRESS">
+              <small class="usuario-hint">
+                Até 25 caracteres ASCII (sem acento). É salvo em maiúsculas.
+              </small>
+            </div>
+
+            <div class="usuario-field">
+              <label for="cidadeInput">Cidade</label>
+              <input id="cidadeInput" type="text" name="cidade"
+                     value="{{ cidade }}" maxlength="15"
+                     placeholder="SAO PAULO">
+              <small class="usuario-hint">
+                Até 15 caracteres ASCII. É salvo em maiúsculas.
+              </small>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <header class="form-section-header">
+          <span class="form-section-icon" aria-hidden="true">💾</span>
+          <h2 class="form-section-titulo">Onde fica salvo</h2>
+        </header>
+        <div class="form-section-body">
+          <p class="config-info-texto">
+            Ao salvar, a chave é gravada num arquivo <code>pix_settings.json</code>
+            ao lado do executável. Ele é lido automaticamente a cada inicialização —
+            <strong>a chave não se perde ao reiniciar</strong>. Para voltar ao padrão
+            do <code>config.py</code>, basta apagar esse arquivo.
+          </p>
+          <p class="config-info-arquivo">
+            <span class="config-info-label">Caminho:</span>
+            <code class="config-info-path">{{ path_arquivo }}</code>
+          </p>
+        </div>
+      </section>
+
+      {% if payload_preview %}
+      <section class="form-section">
+        <header class="form-section-header">
+          <span class="form-section-icon" aria-hidden="true">🔍</span>
+          <h2 class="form-section-titulo">Pix Copia e Cola (preview de R$ 1,00)</h2>
+        </header>
+        <div class="form-section-body">
+          <textarea readonly rows="3" class="config-preview-payload">{{ payload_preview }}</textarea>
+          <small class="usuario-hint">
+            Esse é o payload que vai entrar no QR. Você pode colar no Pix Copia e Cola do app do banco para testar — ele tem que abrir mostrando a loja certa.
+          </small>
+        </div>
+      </section>
+      {% endif %}
+
+      <div class="usuario-form-actions">
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline">Cancelar</a>
+        <button type="submit" class="btn btn-primary btn-lg">Salvar chave Pix</button>
+      </div>
+
+    </div>
+  </form>
+
+</div>
+
+{% endblock %}

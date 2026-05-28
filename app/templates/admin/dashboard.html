@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Visão geral do dia</p>
+  </div>
+</div>
+
+<div class="cards-top">
+
+  <div class="card-indicador">
+    <h4>Mesas finalizadas hoje</h4>
+    <div class="d-flex justify-content-between align-items-center mt-2">
+      <div class="valor">{{ mesas_finalizadas_hoje }}</div>
+      <span class="icon-indicador text-warning">✓</span>
+    </div>
+  </div>
+
+  <div class="card-indicador">
+    <h4>Produtos vendidos hoje</h4>
+    <div class="d-flex justify-content-between align-items-center mt-2">
+      <div class="valor">{{ itens_vendidos_hoje }}</div>
+      <span class="icon-indicador text-danger">📦</span>
+    </div>
+  </div>
+
+  <div class="card-indicador">
+    <h4>Faturamento do dia</h4>
+    <div class="d-flex justify-content-between align-items-center mt-2">
+      <div class="valor">R$ {{ '%0.2f'|format(faturamento_hoje) }}</div>
+      <span class="icon-indicador text-success">💰</span>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="dashboard-grid">
+
+  <div class="card-grafico">
+    <h3>Usuários que mais finalizaram mesas</h3>
+    <canvas id="finalizadores"></canvas>
+  </div>
+
+  <div class="card-grafico">
+    <h3>Participação nas finalizações (%)</h3>
+    <canvas id="donutMesas"></canvas>
+  </div>
+
+  <div class="card-grafico">
+    <h3>Saída diária de produtos</h3>
+    <canvas id="saidaDiaria"></canvas>
+  </div>
+
+  <div class="card-grafico">
+    <h3>Produtos mais vendidos</h3>
+    <canvas id="maisVendidos"></canvas>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  window.dashboardData = {
+    usuarios: {{ usuarios | tojson }},
+    total_mesas: {{ total_mesas | tojson }},
+    porcentagens: {{ porcentagens | tojson }},
+    dias: {{ dias | tojson }},
+    qtd_dia: {{ qtd_dia | tojson }},
+    prod_nomes: {{ prod_nomes | tojson }},
+    prod_qtd: {{ prod_qtd | tojson }}
+  };
+</script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

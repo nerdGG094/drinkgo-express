@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+{% block title %}Caixa — Pedidos do Dia{% endblock %}
+
+{% block content %}
+
+<div class="container-pedidos">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Caixa</h1>
+      <p class="page-subtitle">Pedidos recebidos hoje — abertos e atrasados em destaque</p>
+    </div>
+  </div>
+
+  {% if atrasados_count and current_user.role == 'admin' %}
+  <div class="caixa-alerta-atrasados" role="alert">
+    <span class="caixa-alerta-icon" aria-hidden="true">⚠️</span>
+    <div class="caixa-alerta-corpo">
+      <strong>{{ atrasados_count }} pedido{{ 's' if atrasados_count > 1 else '' }} aberto{{ 's' if atrasados_count > 1 else '' }} de dias anteriores</strong>
+      <span>Mesas que ficaram ocupadas após o turno. Use "Forçar finalização" para liberar — esses pedidos não entram nos relatórios.</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="grid-pedidos">
+
+    {% for p in pedidos %}
+    {% set is_atrasado = (not p.pedido_fechado) and p.criado_em and hoje_inicio and p.criado_em < hoje_inicio %}
+    {% set dias_aberto = ((agora - p.criado_em).days) if (is_atrasado and agora and p.criado_em) else 0 %}
+    <article class="pedido-card {% if is_atrasado %}is-atrasado{% endif %}" id="pedido-{{ p.id }}">
+
+      {% if is_atrasado %}
+      <div class="pedido-atrasado-tag" aria-label="Pedido atrasado">
+        <span class="pedido-atrasado-dot" aria-hidden="true"></span>
+        Atrasado · aberto há {{ dias_aberto }} dia{{ 's' if dias_aberto != 1 else '' }}
+        ({{ p.criado_em.strftime('%d/%m %H:%M') }})
+      </div>
+      {% endif %}
+
+      <header class="pedido-topo">
+        <div class="pedido-tipo">
+          {% if p.tipo == 'mesa' and p.mesa %}
+            🪑 <span>Mesa {{ p.mesa.numero }}</span>
+          {% elif p.tipo == 'retirada' %}
+            📍 <span>Retirada — {{ p.cliente_nome }}</span>
+          {% elif p.tipo == 'delivery' %}
+            🚛 <span>Delivery — {{ p.cliente_nome }}</span>
+          {% endif %}
+        </div>
+
+        <span class="status-badge status-{{ p.status }}">{{ p.status }}</span>
+      </header>
+
+      {% if p.pedido_fechado %}
+      <div class="linha-info">
+        <span class="badge badge-success">Pedido fechado</span>
+        {% if not p.cupom_impresso_em and p.forma_pagamento and p.forma_pagamento != 'cancelado' %}
+          <span class="badge badge-warn" title="Cupom não foi impresso/visualizado">
+            ⚠ Sem cupom
+          </span>
+        {% elif p.cupom_impresso_em %}
+          <span class="badge badge-info" title="Cupom impresso em {{ p.cupom_impresso_em.strftime('%d/%m %H:%M') }}">
+            ✓ Cupom OK
+          </span>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if p.garcom %}
+      <div class="linha-info">
+        <span class="label">Atendente</span>
+        <span class="valor">{{ p.garcom.nome }}</span>
+      </div>
+      {% endif %}
+
+      {% if p.tipo == 'delivery' and p.endereco %}
+      <div class="linha-info">
+        <span class="label">Endereço</span>
+        <span class="valor">{{ p.endereco }}</span>
+      </div>
+      {% endif %}
+
+      <div class="lista-itens">
+        {% for item in p.itens %}
+        <div class="item">
+          {% if item.produto.foto %}
+            <img class="foto-item"
+                 src="{{ url_for('imagem_produto_global', filename=item.produto.foto) }}"
+                 alt="{{ item.produto.nome }}">
+          {% else %}
+            <img class="foto-item"
+                 src="{{ url_for('static', filename='imagens_produtos/placeholder.png') }}"
+                 alt="">
+          {% endif %}
+
+          <div class="item-info">
+            <strong>{{ item.quantidade }}×</strong>{{ item.produto.nome }}
+          </div>
+
+          <div class="item-preco">R$ {{ '%.2f'|format(item.produto.preco) }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="linha-info">
+        <span class="label">Subtotal</span>
+        <span class="valor">R$ {{ '%.2f'|format(p.total()) }}</span>
+      </div>
+
+      {% if p.desconto and p.desconto > 0 %}
+      <div class="linha-info">
+        <span class="label">Desconto</span>
+        <span class="valor text-danger">- R$ {{ '%.2f'|format(p.desconto) }}</span>
+      </div>
+      {% endif %}
+
+      <div class="linha-info" style="font-size:16px;">
+        <span class="label" style="font-size:12px;">Total final</span>
+        <span class="valor" style="color:var(--accent); font-size:17px;">
+          R$ {{ '%.2f'|format(p.total() - (p.desconto or 0)) }}
+        </span>
+      </div>
+
+      {% if p.pedido_fechado %}
+        <div class="linha-info">
+          <span class="label">Pagamento</span>
+          <span class="valor">
+            {{ p.forma_pagamento|upper }}{% if p.forma_pagamento2 %} + {{ p.forma_pagamento2|upper }}{% endif %}
+          </span>
+        </div>
+
+        {% if p.valor_entregue %}
+        <div class="linha-info">
+          <span class="label">{{ p.forma_pagamento|upper }}</span>
+          <span class="valor">R$ {{ '%.2f'|format(p.valor_entregue) }}</span>
+        </div>
+        {% endif %}
+
+        {% if p.forma_pagamento2 and p.valor_pagamento2 %}
+        <div class="linha-info">
+          <span class="label">{{ p.forma_pagamento2|upper }}</span>
+          <span class="valor">R$ {{ '%.2f'|format(p.valor_pagamento2) }}</span>
+        </div>
+        {% endif %}
+
+        {% if p.troco and p.troco > 0 %}
+        <div class="linha-info">
+          <span class="label">Troco</span>
+          <span class="valor text-success">R$ {{ '%.2f'|format(p.troco) }}</span>
+        </div>
+        {% endif %}
+      {% endif %}
+
+      <div class="pedido-acoes">
+
+        {% if not p.pedido_fechado or current_user.role|lower == 'admin' %}
+          <a href="{{ url_for('admin.editar_caixa', pedido_id=p.id) }}" class="btn-editar-caixa">
+            Editar pedido
+          </a>
+        {% else %}
+          <span class="btn-editar-caixa btn-desabilitado" title="Pedido já está fechado">
+            Editar pedido
+          </span>
+        {% endif %}
+
+        <form method="post"
+              action="{{ url_for('admin.pagar_pedido', pedido_id=p.id) }}"
+              class="form-pagamento">
+
+          <div class="linha-pagamento">
+
+            <!-- Forma 1 -->
+            <select class="select-pagamento {% if p.pedido_fechado %}select-disabled{% endif %}"
+                    name="forma_pagamento"
+                    onchange="togglePagamento({{ p.id }}, this.value)">
+              <option value="">Forma de pagamento</option>
+              <option value="dinheiro" {% if p.forma_pagamento=='dinheiro' %}selected{% endif %}>💵 Dinheiro</option>
+              <option value="pix"      {% if p.forma_pagamento=='pix'      %}selected{% endif %}>⚡ Pix</option>
+              <option value="cartao"   {% if p.forma_pagamento=='cartao'   %}selected{% endif %}>💳 Cartão</option>
+              <option value="bonif"    {% if p.forma_pagamento=='bonif'    %}selected{% endif %}>♻️ Bonificação</option>
+            </select>
+
+            <input type="text" step="0.01"
+                   class="input-dinheiro {% if p.pedido_fechado %}input-disabled{% endif %}"
+                   name="valor_entregue"
+                   id="dinheiro-input-{{ p.id }}"
+                   value="{{ p.valor_entregue if p.valor_entregue else '' }}"
+                   placeholder="Valor pagamento"
+                   {% if p.forma_pagamento != 'dinheiro' %}style="display:none"{% endif %}>
+
+            <!-- Forma 2 -->
+            <select class="select-pagamento {% if p.pedido_fechado %}select-disabled{% endif %}"
+                    name="forma_pagamento2"
+                    onchange="togglePagamento2({{ p.id }})">
+              <option value="">2ª forma (opcional)</option>
+              <option value="dinheiro" {% if p.forma_pagamento2=='dinheiro' %}selected{% endif %}>💵 Dinheiro</option>
+              <option value="pix"      {% if p.forma_pagamento2=='pix'      %}selected{% endif %}>⚡ Pix</option>
+              <option value="cartao"   {% if p.forma_pagamento2=='cartao'   %}selected{% endif %}>💳 Cartão</option>
+            </select>
+
+            <input type="text" step="0.01"
+                   name="valor_pagamento2"
+                   id="valor-pagamento2-{{ p.id }}"
+                   class="input-dinheiro {% if p.pedido_fechado %}input-disabled{% endif %}"
+                   value="{{ p.valor_pagamento2 if p.valor_pagamento2 else '' }}"
+                   placeholder="Valor 2ª forma"
+                   style="display:none;">
+
+            <!-- Cartão -->
+            <div id="tipo-cartao-{{ p.id }}" style="display:none;">
+              <label>Tipo do cartão</label>
+              <select name="tipo_cartao">
+                <option value="">Selecione</option>
+                <option value="credito" {% if p.tipo_cartao=='credito' %}selected{% endif %}>Crédito</option>
+                <option value="debito"  {% if p.tipo_cartao=='debito'  %}selected{% endif %}>Débito</option>
+              </select>
+            </div>
+
+          </div>
+
+          <div class="linha-desconto">
+            <input type="text" step="0.01"
+                   name="desconto"
+                   class="input-desconto"
+                   placeholder="Desconto (R$)"
+                   value="{{ p.desconto if p.desconto else '' }}"
+                   {% if p.pedido_fechado %}disabled{% endif %}>
+          </div>
+
+          <button type="submit" class="btn-cupom">Imprimir recibo</button>
+        </form>
+
+        {% if not p.pedido_fechado %}
+          <button class="btn-fechar" onclick="abrirConfirmacao({{ p.id }})">
+            Fechar pedido
+          </button>
+        {% endif %}
+
+        {# Cancelar pedido — apenas para retirada/delivery não fechados #}
+        {% if not p.pedido_fechado and p.tipo in ['retirada', 'delivery'] %}
+          <form method="post"
+                action="{{ url_for('admin.cancelar_pedido', pedido_id=p.id) }}"
+                class="form-cancelar-pedido"
+                data-confirm="Cancelar pedido #{{ p.id }} de {{ p.tipo }}? Não conta em relatórios e a ação não pode ser desfeita."
+                data-no-loading="true">
+            <input type="text" name="motivo" maxlength="120"
+                   placeholder="Motivo (opcional): cliente desistiu, sem entregador, etc.">
+            <button type="submit" class="btn-cancelar-pedido">
+              ✕ Cancelar pedido
+            </button>
+          </form>
+        {% endif %}
+
+        {% if current_user.role == 'admin' and not p.pedido_fechado %}
+          <form method="post"
+                action="{{ url_for('admin.forcar_finalizacao_pedido', pedido_id=p.id) }}"
+                class="form-forcar-fechar"
+                data-confirm="Finalizar pedido #{{ p.id }} sem pagamento? Será marcado como cancelado e a mesa liberada. Não conta em relatórios."
+                data-no-loading="true">
+            <input type="text" name="motivo" maxlength="120"
+                   placeholder="Motivo (opcional): garçom esqueceu, etc.">
+            <button type="submit" class="btn-forcar-fechar">
+              ⚠ Forçar finalização (admin)
+            </button>
+          </form>
+        {% endif %}
+
+      </div>
+    </article>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-state-icon" aria-hidden="true">🧾</div>
+        <h2 class="empty-state-title">Nenhum pedido hoje</h2>
+        <p class="empty-state-desc">Quando um pedido for aberto no salão, retirada ou delivery, ele aparecerá aqui.</p>
+        <div class="empty-state-actions">
+          <a href="{{ url_for('public.novo') }}" class="btn btn-primary btn-sm">+ Novo pedido</a>
+        </div>
+      </div>
+    {% endfor %}
+
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAÇÃO -->
+<div id="modal-confirm" class="modal-confirm" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <h3>Fechar este pedido?</h3>
+    <p>Essa ação não poderá ser desfeita.</p>
+    <div class="modal-acoes">
+      <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-confirmar" onclick="confirmarFechamento()">Fechar pedido</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/pedidos.js') }}"></script>
+{% endblock %}

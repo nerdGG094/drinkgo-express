@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Realizar contagem — Inventário{% endblock %}
+
+{% block content %}
+
+<div class="inventario-page">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Realizar contagem do dia</h1>
+      <p class="page-subtitle">Olhe cada item no chão, conte e digite a quantidade ao lado. Itens em branco são ignorados.</p>
+    </div>
+    <div class="page-actions">
+      <a href="{{ url_for('admin.inventario') }}" class="btn btn-outline btn-sm">← Voltar</a>
+    </div>
+  </div>
+
+  <form method="post" class="inv-contagem-card form-section">
+
+    <header class="form-section-header">
+      <span class="form-section-icon" aria-hidden="true">📋</span>
+      <h2 class="form-section-titulo">Contagem física geral</h2>
+      <div class="form-section-acoes">
+        <label class="inv-data-label">
+          Data:
+          <input type="date" name="data" value="{{ hoje.isoformat() }}" max="{{ hoje.isoformat() }}">
+        </label>
+      </div>
+    </header>
+
+    <div class="form-section-body">
+
+      <p class="inv-contagem-hint">
+        Deixe em branco os itens que <strong>não foi possível contar</strong> agora — só são gravados os preenchidos.
+      </p>
+
+      {# ============ SEÇÃO 1: ITENS OPERACIONAIS ============ #}
+      {% if linhas_itens %}
+      <h3 class="inv-secao-form-titulo">
+        <span aria-hidden="true">🗃️</span>
+        Itens operacionais
+        <span class="inv-secao-count">{{ linhas_itens|length }}</span>
+      </h3>
+
+      <div class="inv-contagem-tabela" role="table">
+        <div class="inv-contagem-row inv-contagem-head" role="row">
+          <div role="columnheader">Item</div>
+          <div role="columnheader">Anterior</div>
+          <div role="columnheader">Quantidade hoje</div>
+          <div role="columnheader" class="hide-on-mobile">Observação</div>
+        </div>
+
+        {% for ln in linhas_itens %}
+        {% set it = ln.alvo %}
+        <div class="inv-contagem-row" role="row">
+          <label class="inv-contagem-item" for="qtd_item_{{ it.id }}">
+            <span class="inv-contagem-icon" aria-hidden="true">{{ it.icone or '📦' }}</span>
+            <span class="inv-contagem-info">
+              <span class="inv-contagem-nome">{{ it.nome }}</span>
+              <span class="inv-contagem-cat">{{ it.categoria|upper }} · {{ it.unidade }}</span>
+            </span>
+          </label>
+
+          <div class="inv-contagem-anterior">
+            {% if ln.qtd_anterior is not none %}
+              <span class="inv-anterior-num">{{ ln.qtd_anterior }}</span>
+              <span class="inv-anterior-meta">última</span>
+            {% else %}
+              <span class="inv-anterior-vazio">—</span>
+            {% endif %}
+          </div>
+
+          <div class="inv-contagem-qtd">
+            <input type="number" id="qtd_item_{{ it.id }}" name="qtd_item_{{ it.id }}"
+                   min="0" step="1" inputmode="numeric"
+                   placeholder="0"
+                   value="{{ ln.qtd_hoje_existente if ln.qtd_hoje_existente is not none else '' }}"
+                   data-anterior="{{ ln.qtd_anterior if ln.qtd_anterior is not none else '' }}">
+            <span class="inv-contagem-unidade">{{ it.unidade }}</span>
+            <span class="inv-contagem-delta" aria-hidden="true"></span>
+          </div>
+
+          <div class="inv-contagem-obs hide-on-mobile">
+            <input type="text" name="obs_item_{{ it.id }}" maxlength="200" placeholder="Observação (opcional)">
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {# ============ SEÇÃO 2: PRODUTOS DO CARDÁPIO ============ #}
+      {% if linhas_produtos %}
+      <h3 class="inv-secao-form-titulo" style="margin-top: var(--sp-5);">
+        <span aria-hidden="true">🍺</span>
+        Produtos do cardápio
+        <span class="inv-secao-count">{{ linhas_produtos|length }}</span>
+      </h3>
+
+      <div class="inv-contagem-tabela" role="table">
+        <div class="inv-contagem-row inv-contagem-head" role="row">
+          <div role="columnheader">Produto</div>
+          <div role="columnheader">Anterior</div>
+          <div role="columnheader">Quantidade hoje</div>
+          <div role="columnheader" class="hide-on-mobile">Observação</div>
+        </div>
+
+        {% for ln in linhas_produtos %}
+        {% set p = ln.alvo %}
+        <div class="inv-contagem-row" role="row">
+          <label class="inv-contagem-item" for="qtd_prod_{{ p.id }}">
+            <span class="inv-contagem-icon" aria-hidden="true">🍺</span>
+            <span class="inv-contagem-info">
+              <span class="inv-contagem-nome">{{ p.nome }}</span>
+              <span class="inv-contagem-cat">CARDÁPIO · un</span>
+            </span>
+          </label>
+
+          <div class="inv-contagem-anterior">
+            {% if ln.qtd_anterior is not none %}
+              <span class="inv-anterior-num">{{ ln.qtd_anterior }}</span>
+              <span class="inv-anterior-meta">última</span>
+            {% else %}
+              <span class="inv-anterior-vazio">—</span>
+            {% endif %}
+          </div>
+
+          <div class="inv-contagem-qtd">
+            <input type="number" id="qtd_prod_{{ p.id }}" name="qtd_prod_{{ p.id }}"
+                   min="0" step="1" inputmode="numeric"
+                   placeholder="0"
+                   value="{{ ln.qtd_hoje_existente if ln.qtd_hoje_existente is not none else '' }}"
+                   data-anterior="{{ ln.qtd_anterior if ln.qtd_anterior is not none else '' }}">
+            <span class="inv-contagem-unidade">un</span>
+            <span class="inv-contagem-delta" aria-hidden="true"></span>
+          </div>
+
+          <div class="inv-contagem-obs hide-on-mobile">
+            <input type="text" name="obs_prod_{{ p.id }}" maxlength="200" placeholder="Observação (opcional)">
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if not linhas_itens and not linhas_produtos %}
+      <div class="empty-state">
+        <div class="empty-state-icon" aria-hidden="true">🗃️</div>
+        <p class="empty-state-desc">Nenhum item ativo para contar. Cadastre itens ou produtos antes.</p>
+      </div>
+      {% else %}
+      <div class="usuario-form-actions">
+        <a href="{{ url_for('admin.inventario') }}" class="btn btn-outline">Cancelar</a>
+        <button type="submit" class="btn btn-primary btn-lg">Lançar contagem</button>
+      </div>
+      {% endif %}
+
+    </div>
+  </form>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.querySelectorAll('.inv-contagem-qtd input').forEach(inp => {
+    const delta = inp.parentElement.querySelector('.inv-contagem-delta');
+    if (!delta) return;
+    const update = () => {
+      const ant = parseInt(inp.dataset.anterior, 10);
+      const v = parseInt(inp.value, 10);
+      if (Number.isNaN(v) || Number.isNaN(ant)) {
+        delta.textContent = '';
+        delta.className = 'inv-contagem-delta';
+        return;
+      }
+      const d = v - ant;
+      if (d === 0) { delta.textContent = '= 0'; delta.className = 'inv-contagem-delta is-zero'; }
+      else if (d > 0) { delta.textContent = `+${d}`; delta.className = 'inv-contagem-delta is-up'; }
+      else { delta.textContent = `${d}`; delta.className = 'inv-contagem-delta is-down'; }
+    };
+    inp.addEventListener('input', update);
+    update();
+  });
+</script>
+{% endblock %}

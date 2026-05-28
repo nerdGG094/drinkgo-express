@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Retirada no local{% endblock %}
+
+{% block content %}
+
+<div class="retirada-container">
+  <div class="retirada-card card">
+
+    <div class="retirada-header">
+      <div class="retirada-icon">📍</div>
+      <div>
+        <h1 class="page-title">Retirada no local</h1>
+        <p class="page-subtitle">Informe os dados do cliente</p>
+      </div>
+    </div>
+
+    <form method="post" class="form retirada-form">
+
+      <div class="input-group">
+        <label for="nome">Nome do cliente</label>
+        <input id="nome" type="text" name="nome" placeholder="Ex.: Maria Silva" required>
+      </div>
+
+      <div class="input-group">
+        <label for="telefone">Telefone</label>
+        <input id="telefone" type="text" name="telefone" placeholder="(00) 00000-0000">
+      </div>
+
+      <div class="input-group">
+        <label for="obs">Observações</label>
+        <textarea id="obs" name="obs" rows="2" placeholder="Opcional"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg">
+        Avançar para o cardápio →
+      </button>
+
+    </form>
+  </div>
+</div>
+
+{% endblock %}

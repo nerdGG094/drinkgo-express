@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Chopeira #{{ chopeira.numero }} — Detalhes{% endblock %}
+
+{% block content %}
+
+<div class="chopeira-detalhes-page">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Detalhes da locação</h1>
+      <p class="page-subtitle">Chopeira #{{ chopeira.numero }}</p>
+    </div>
+    <div class="page-actions">
+      <a href="{{ url_for('admin.chopeiras') }}" class="btn btn-outline btn-sm">← Voltar</a>
+    </div>
+  </div>
+
+  <div class="detalhes-grid">
+
+    <section class="card">
+      <h3 class="detalhes-titulo">Chopeira</h3>
+      <div class="detalhes-row">
+        <span class="label">Número</span>
+        <span class="valor">#{{ chopeira.numero }}</span>
+      </div>
+      <div class="detalhes-row">
+        <span class="label">Status</span>
+        {% if chopeira.status == 'disponivel' %}
+          <span class="badge badge-success">Disponível</span>
+        {% else %}
+          <span class="badge badge-danger">Alugada</span>
+        {% endif %}
+      </div>
+    </section>
+
+    {% if aluguel %}
+    <section class="card">
+      <h3 class="detalhes-titulo">Cliente</h3>
+      <div class="detalhes-row"><span class="label">Nome</span><span class="valor">{{ aluguel.cliente_nome }}</span></div>
+      <div class="detalhes-row"><span class="label">Telefone</span><span class="valor">{{ aluguel.telefone or '—' }}</span></div>
+      <div class="detalhes-row"><span class="label">Endereço</span><span class="valor">{{ aluguel.endereco or '—' }}</span></div>
+      <div class="detalhes-row"><span class="label">Data de saída</span><span class="valor">{{ aluguel.data_saida.strftime('%d/%m/%Y %H:%M') if aluguel.data_saida else '—' }}</span></div>
+    </section>
+
+    <section class="card">
+      <h3 class="detalhes-titulo">Equipamentos</h3>
+      <div class="detalhes-row"><span class="label">CO₂</span><span class="badge {{ 'badge-success' if aluguel.alugou_co2 else 'badge-muted' }}">{{ 'Sim' if aluguel.alugou_co2 else 'Não' }}</span></div>
+      <div class="detalhes-row"><span class="label">KEG</span><span class="valor">{{ aluguel.keg_tipo or '—' }}</span></div>
+      <div class="detalhes-row"><span class="label">Manômetro</span><span class="badge {{ 'badge-success' if aluguel.alugou_manometro else 'badge-muted' }}">{{ 'Sim' if aluguel.alugou_manometro else 'Não' }}</span></div>
+      <div class="detalhes-row"><span class="label">Pingadeira</span><span class="badge {{ 'badge-success' if aluguel.alugou_pingadeira else 'badge-muted' }}">{{ 'Sim' if aluguel.alugou_pingadeira else 'Não' }}</span></div>
+    </section>
+    {% else %}
+    <section class="card">
+      <p class="text-muted text-center" style="padding: var(--sp-3);">
+        Nenhuma locação ativa encontrada para esta chopeira.
+      </p>
+    </section>
+    {% endif %}
+
+  </div>
+
+</div>
+
+{% endblock %}

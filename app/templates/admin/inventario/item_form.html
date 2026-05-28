@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar item' if item else 'Novo item' }} — Inventário{% endblock %}
+
+{% block content %}
+
+<div class="inventario-page">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">{{ 'Editar item' if item else 'Novo item' }}</h1>
+      <p class="page-subtitle">{{ 'Atualize os dados do item operacional' if item else 'Cadastre um novo item de inventário' }}</p>
+    </div>
+    <div class="page-actions">
+      <a href="{% if item %}{{ url_for('admin.inventario_item', item_id=item.id) }}{% else %}{{ url_for('admin.inventario') }}{% endif %}" class="btn btn-outline btn-sm">← Voltar</a>
+    </div>
+  </div>
+
+  <form method="post" class="inv-form-card form-section">
+
+    <header class="form-section-header">
+      <span class="form-section-icon" aria-hidden="true">📦</span>
+      <h2 class="form-section-titulo">Dados do item</h2>
+    </header>
+
+    <div class="form-section-body">
+
+      <div class="inv-form-grid">
+
+        <div class="usuario-field">
+          <label for="nomeInput">Nome do item</label>
+          <input id="nomeInput" type="text" name="nome" required
+                 placeholder="Ex.: Keg P (30L)"
+                 value="{{ item.nome if item else '' }}">
+        </div>
+
+        <div class="usuario-field">
+          <label for="iconeInput">Ícone <span class="hint">(emoji)</span></label>
+          <input id="iconeInput" type="text" name="icone" maxlength="4"
+                 placeholder="Ex.: 🍺"
+                 value="{{ item.icone if item else '' }}">
+        </div>
+
+        <div class="usuario-field">
+          <label for="categoriaSel">Categoria</label>
+          <select id="categoriaSel" name="categoria">
+            {% for k, label in categorias %}
+              <option value="{{ k }}" {% if item and item.categoria == k %}selected{% elif not item and k == 'equipamento' %}selected{% endif %}>
+                {{ label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="usuario-field">
+          <label for="unidadeInput">Unidade</label>
+          <input id="unidadeInput" type="text" name="unidade" maxlength="10"
+                 placeholder="un"
+                 value="{{ item.unidade if item else 'un' }}">
+        </div>
+
+        <div class="usuario-field">
+          <label for="alertaInput">Alerta se ≤</label>
+          <input id="alertaInput" type="number" name="alerta_se_abaixo" min="0" step="1"
+                 placeholder="(opcional)"
+                 value="{{ item.alerta_se_abaixo if item and item.alerta_se_abaixo is not none else '' }}">
+          <small class="hint">Quando a contagem for menor ou igual a esse número, o item aparece em alerta na lista.</small>
+        </div>
+
+        <div class="usuario-field" style="grid-column: 1 / -1;">
+          <label for="obsInput">Observação</label>
+          <textarea id="obsInput" name="observacao" rows="3"
+                    placeholder="Notas internas sobre este item">{{ item.observacao if item else '' }}</textarea>
+        </div>
+
+        {% if item %}
+        <div class="usuario-field usuario-field-switch">
+          <label>Status</label>
+          <label class="switch-toggle">
+            <input type="checkbox" name="ativo" value="1" {% if item.ativo %}checked{% endif %}>
+            <span class="switch-slider" aria-hidden="true"></span>
+            <span class="switch-label">
+              <span class="switch-label-on">Ativo</span>
+              <span class="switch-label-off">Inativo</span>
+            </span>
+          </label>
+        </div>
+        {% endif %}
+
+      </div>
+
+      <div class="usuario-form-actions">
+        <a href="{% if item %}{{ url_for('admin.inventario_item', item_id=item.id) }}{% else %}{{ url_for('admin.inventario') }}{% endif %}"
+           class="btn btn-outline">Cancelar</a>
+        <button type="submit" class="btn btn-primary btn-lg">
+          {{ 'Salvar alterações' if item else 'Cadastrar item' }}
+        </button>
+      </div>
+    </div>
+
+  </form>
+
+</div>
+
+{% endblock %}

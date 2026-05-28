@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Editar Pedido #{{ pedido.id }}{% endblock %}
+
+{% block content %}
+
+<div class="container-editar">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Editar pedido #{{ pedido.id }}</h1>
+      <p class="page-subtitle">
+        {{ pedido.tipo|upper }}
+        · Status: <span class="badge badge-info">{{ pedido.status|upper }}</span>
+      </p>
+    </div>
+    <div class="page-actions">
+      <a href="{{ url_for('admin.pedidos') }}" class="btn btn-outline btn-sm">← Voltar</a>
+    </div>
+  </div>
+
+  <!-- ADICIONAR PRODUTO -->
+  <div class="card">
+    <h3 style="margin-bottom: var(--sp-3);">Adicionar produto</h3>
+
+    <div class="add-produto-controls">
+      <div class="produto-busca-wrap">
+        <input type="text"
+               id="produto_busca"
+               class="form-control"
+               placeholder="Digite para buscar (ex: refri pet 250)"
+               autocomplete="off"
+               aria-autocomplete="list"
+               aria-controls="produto_lista"
+               aria-expanded="false">
+        <input type="hidden" id="produto_select" value="">
+        <ul id="produto_lista" class="produto-busca-lista" role="listbox" hidden></ul>
+      </div>
+
+      <input type="number" id="produto_qtd" value="1" min="1" class="form-control">
+
+      <button type="button"
+              class="btn btn-primary"
+              onclick="adicionarProduto({{ pedido.id }}, '{{ url_for('admin.adicionar_produto_caixa', pedido_id=pedido.id) }}')">
+        Adicionar
+      </button>
+    </div>
+
+    <script id="produtos_json" type="application/json">
+      [
+        {% for prod in produtos %}
+          {"id": {{ prod.id }}, "nome": {{ prod.nome|tojson }}, "preco": {{ '%.2f'|format(prod.preco) }}}{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ]
+    </script>
+  </div>
+
+  <!-- ITENS DO PEDIDO -->
+  <form method="post" class="mt-4">
+    <div class="tabela-wrapper" style="margin-top: var(--sp-4);">
+      <table class="tabela tabela-itens">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Preço unitário</th>
+            <th>Quantidade</th>
+            <th>Total</th>
+            <th style="text-align:right;">Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in pedido.itens %}
+          <tr>
+            <td class="col-produto">{{ item.produto.nome }}</td>
+            <td class="col-preco">R$ {{ '%.2f'|format(item.produto.preco) }}</td>
+            <td class="col-qtd">
+              <input class="input-qtd form-control"
+                     type="number"
+                     min="1"
+                     name="qtd_{{ item.id }}"
+                     value="{{ item.quantidade }}">
+            </td>
+            <td class="col-total">R$ {{ '%.2f'|format(item.quantidade * item.produto.preco) }}</td>
+            <td class="col-acao">
+              <button name="remover_item"
+                      value="{{ item.id }}"
+                      class="btn btn-danger btn-sm"
+                      type="submit">
+                Remover
+              </button>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="vazio">Nenhum item ainda — adicione produtos acima.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="acoes-final">
+      <button type="submit" name="salvar" value="1" class="btn btn-success">
+        Salvar alterações
+      </button>
+      <a href="{{ url_for('admin.pedidos') }}" class="btn btn-outline">
+        Cancelar
+      </a>
+    </div>
+  </form>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/editar_caixa.js') }}"></script>
+{% endblock %}

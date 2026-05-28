@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Acessar Sistema — Chopp Palazzo Express{% endblock %}
+{% block body_class %}page-login{% endblock %}
+
+{% block content %}
+
+<div class="login-container">
+  <div class="login-card">
+
+    <h2 class="login-titulo">Acessar Sistema</h2>
+    <p class="login-subtitulo">Informe suas credenciais para continuar</p>
+
+    <form method="post" class="login-form" onsubmit="return iniciarLogin(this)">
+
+      <div class="input-group">
+        <label for="email">E-mail</label>
+        <input
+          id="email"
+          type="email"
+          name="email"
+          placeholder="seu@email.com"
+          required
+          autocomplete="username">
+      </div>
+
+      <div class="input-group senha-group">
+        <label for="senha">Senha</label>
+
+        <div class="senha-wrapper">
+          <input
+            id="senha"
+            type="password"
+            name="senha"
+            placeholder="••••••••"
+            required
+            autocomplete="current-password">
+
+          <button type="button"
+                  class="btn-olho"
+                  onclick="toggleSenha()"
+                  aria-label="Mostrar ou ocultar senha">
+            <span aria-hidden="true">👁️</span>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-login" id="btnLogin">
+        Entrar
+      </button>
+
+      <div class="logo-area">
+        <img src="{{ url_for('static', filename='imagens/1bu-logo.png') }}"
+             alt="Logo"
+             class="login-logo">
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/login.js') }}"></script>
+{% endblock %}

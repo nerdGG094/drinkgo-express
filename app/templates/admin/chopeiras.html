@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}Aluguel de chopeiras{% endblock %}
+
+{% block content %}
+
+{# ------------- Estatísticas globais ------------- #}
+{% set todas = grupo1 + grupo2 + grupo3 %}
+{% set total = todas|length %}
+{% set disponiveis = todas|selectattr('status','equalto','disponivel')|list|length %}
+{% set alugadas = total - disponiveis %}
+{% set pct_ocupacao = ((alugadas / total) * 100)|round(0)|int if total > 0 else 0 %}
+
+<div class="chopeiras-page" data-filtro="todas">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Aluguel de chopeiras</h1>
+      <p class="page-subtitle">Visão geral da frota — verde = disponível · vermelho = alugada</p>
+    </div>
+    <div class="page-actions">
+      <a href="{{ url_for('admin.relatorio_chopeiras_alugadas') }}" class="btn btn-outline btn-sm">
+        Relatório
+      </a>
+    </div>
+  </div>
+
+  {# ------------- KPIs ------------- #}
+  <div class="chopeiras-stats">
+    <div class="chopeiras-stat-card">
+      <span class="chopeiras-stat-label">Total</span>
+      <span class="chopeiras-stat-valor">{{ total }}</span>
+      <span class="chopeiras-stat-sub">unidades cadastradas</span>
+    </div>
+
+    <div class="chopeiras-stat-card is-disponivel">
+      <span class="chopeiras-stat-label"><span class="status-dot status-dot-livre" aria-hidden="true"></span> Disponíveis</span>
+      <span class="chopeiras-stat-valor">{{ disponiveis }}</span>
+      <span class="chopeiras-stat-sub">prontas para alugar</span>
+    </div>
+
+    <div class="chopeiras-stat-card is-alugada">
+      <span class="chopeiras-stat-label"><span class="status-dot status-dot-ocupado" aria-hidden="true"></span> Alugadas</span>
+      <span class="chopeiras-stat-valor">{{ alugadas }}</span>
+      <span class="chopeiras-stat-sub">em uso por clientes</span>
+    </div>
+
+    <div class="chopeiras-stat-card chopeiras-stat-ocupacao">
+      <span class="chopeiras-stat-label">Ocupação</span>
+      <div class="chopeiras-stat-ocupacao-row">
+        <span class="chopeiras-stat-valor">{{ pct_ocupacao }}%</span>
+      </div>
+      <div class="chopeiras-bar" role="progressbar"
+           aria-valuenow="{{ pct_ocupacao }}" aria-valuemin="0" aria-valuemax="100"
+           aria-label="Ocupação da frota">
+        <div class="chopeiras-bar-fill" style="width: {{ pct_ocupacao }}%"></div>
+      </div>
+    </div>
+  </div>
+
+  {# ------------- Filtros ------------- #}
+  <nav class="chopeiras-filtros" aria-label="Filtrar por status">
+    <button type="button" class="chip-filtro active" data-filtro="todas">
+      Todas <span class="chip-count">{{ total }}</span>
+    </button>
+    <button type="button" class="chip-filtro" data-filtro="disponivel">
+      Disponíveis <span class="chip-count">{{ disponiveis }}</span>
+    </button>
+    <button type="button" class="chip-filtro" data-filtro="alugada">
+      Alugadas <span class="chip-count">{{ alugadas }}</span>
+    </button>
+  </nav>
+
+  {# ------------- Grupos por tipo ------------- #}
+  {% for grupo, titulo, icone in [
+       (grupo1, 'Chopeira elétrica (1 torneira)', '🍺'),
+       (grupo2, 'Chopeira elétrica (2 torneiras)', '🍻'),
+       (grupo3, 'Chopeira de gelo', '🧊')
+     ] %}
+  {% set grupo_disp = grupo|selectattr('status','equalto','disponivel')|list|length %}
+  {% set grupo_total = grupo|length %}
+
+  <details class="chopeira-grupo" open>
+    <summary class="chopeira-grupo-header">
+      <span class="chopeira-grupo-titulo">
+        <span class="chopeira-grupo-icone" aria-hidden="true">{{ icone }}</span>
+        {{ titulo }}
+      </span>
+      <span class="chopeira-grupo-meta">
+        <span class="chopeira-grupo-resumo">
+          <span class="resumo-livres">{{ grupo_disp }}</span>
+          <span class="resumo-sep">/</span>
+          <span class="resumo-total">{{ grupo_total }}</span>
+          <span class="resumo-label">livres</span>
+        </span>
+        <span class="chopeira-grupo-toggle" aria-hidden="true">›</span>
+      </span>
+    </summary>
+
+    <div class="chopeira-grupo-body">
+      {% if grupo|length == 0 %}
+        <div class="empty-state" style="padding: var(--sp-6) var(--sp-4);">
+          <div class="empty-state-icon" aria-hidden="true">{{ icone }}</div>
+          <p class="empty-state-desc">Nenhuma chopeira cadastrada neste tipo.</p>
+        </div>
+      {% else %}
+      <div class="chopeiras-grid">
+        {% for c in grupo %}
+          {% if c.status == 'disponivel' %}
+
+          <article class="chopeira-card disponivel" data-status="disponivel">
+            <span class="chopeira-status-tag">
+              <span class="status-dot status-dot-livre" aria-hidden="true"></span>
+              Disponível
+            </span>
+
+            <div class="chopeira-foto">
+              <img src="{{ url_for('static', filename='imagens/chopeira_on.png') }}"
+                   class="img-chopeira" alt="" loading="lazy">
+            </div>
+
+            <div class="chopeira-info">
+              <span class="chopeira-numero">Nº {{ c.numero }}</span>
+              <span class="chopeira-tipo">{{ titulo }}</span>
+            </div>
+
+            <a href="{{ url_for('admin.alugar_chopeira', chopeira_id=c.id) }}"
+               class="chopeira-cta chopeira-cta-alugar">
+              Alugar →
+            </a>
+          </article>
+
+          {% else %}
+
+          <article class="chopeira-card alugada" data-status="alugada">
+            <span class="chopeira-status-tag">
+              <span class="status-dot status-dot-ocupado" aria-hidden="true"></span>
+              Alugada
+            </span>
+
+            <div class="chopeira-foto">
+              <img src="{{ url_for('static', filename='imagens/chopeira_off.png') }}"
+                   class="img-chopeira" alt="" loading="lazy">
+            </div>
+
+            <div class="chopeira-info">
+              <span class="chopeira-numero">Nº {{ c.numero }}</span>
+              <span class="chopeira-tipo">{{ titulo }}</span>
+            </div>
+
+            {% if c.alugou_co2_atual or c.keg_tipo_atual or c.alugou_manometro_atual or c.alugou_pingadeira_atual %}
+            <div class="chopeira-equipamentos" aria-label="Equipamentos alugados">
+              {% if c.alugou_co2_atual %}<span class="equip-chip" title="CO₂">CO₂</span>{% endif %}
+              {% if c.keg_tipo_atual %}<span class="equip-chip" title="Keg ({{ c.keg_tipo_atual }})">Keg</span>{% endif %}
+              {% if c.alugou_manometro_atual %}<span class="equip-chip" title="Manômetro">Manômetro</span>{% endif %}
+              {% if c.alugou_pingadeira_atual %}<span class="equip-chip" title="Pingadeira">Pingadeira</span>{% endif %}
+            </div>
+            {% endif %}
+
+            <div class="chopeira-acoes">
+              <a href="{{ url_for('admin.detalhes_chopeira', chopeira_id=c.id) }}"
+                 class="chopeira-btn chopeira-btn-detalhes">
+                Detalhes
+              </a>
+              <button type="button"
+                      class="chopeira-btn chopeira-btn-devolver"
+                      onclick="abrirConfirmacao({{ c.id }})">
+                Devolver
+              </button>
+            </div>
+
+            <form id="form-retorno-{{ c.id }}"
+                  method="post"
+                  data-no-loading="true"
+                  action="{{ url_for('admin.retornar_chopeira', chopeira_id=c.id) }}"></form>
+          </article>
+
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {# placeholder mostrado quando filtro esconde tudo no grupo #}
+      <div class="chopeira-grupo-vazio" hidden>
+        <p>Nenhuma chopeira corresponde ao filtro selecionado neste tipo.</p>
+      </div>
+    </div>
+  </details>
+  {% endfor %}
+
+</div>
+
+<!-- MODAL CONFIRMAR DEVOLUÇÃO -->
+<div id="modal-confirm" class="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+  <div class="modal-box">
+    <h3 id="modal-titulo">Devolver chopeira?</h3>
+    <p>Confirme para finalizar a devolução desta chopeira.</p>
+    <div class="modal-acoes">
+      <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-confirmar" onclick="confirmarDevolucao()">Confirmar devolução</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/chopeira.js') }}"></script>
+{% endblock %}

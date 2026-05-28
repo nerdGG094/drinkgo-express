@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Entrada de produtos{% endblock %}
+
+{% block content %}
+
+{% set total_registros = entradas|length %}
+{% set total_unidades = entradas|sum(attribute='quantidade') %}
+{% set ultimo = entradas[0] if entradas else None %}
+
+<div class="entrada-page">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Entrada de produtos</h1>
+      <p class="page-subtitle">Registro manual de entradas para controle e auditoria — não interfere em vendas nem no cardápio</p>
+    </div>
+  </div>
+
+  {# ---------- KPIs ---------- #}
+  <div class="entrada-stats">
+    <div class="entrada-stat-card">
+      <span class="entrada-stat-icon" aria-hidden="true">📋</span>
+      <div class="entrada-stat-body">
+        <span class="entrada-stat-label">Registros</span>
+        <span class="entrada-stat-valor">{{ total_registros }}</span>
+        <span class="entrada-stat-sub">no período exibido</span>
+      </div>
+    </div>
+
+    <div class="entrada-stat-card is-success">
+      <span class="entrada-stat-icon" aria-hidden="true">📦</span>
+      <div class="entrada-stat-body">
+        <span class="entrada-stat-label">Unidades</span>
+        <span class="entrada-stat-valor">+{{ total_unidades }}</span>
+        <span class="entrada-stat-sub">total acumulado</span>
+      </div>
+    </div>
+
+    <div class="entrada-stat-card is-info">
+      <span class="entrada-stat-icon" aria-hidden="true">🕒</span>
+      <div class="entrada-stat-body">
+        <span class="entrada-stat-label">Último registro</span>
+        {% if ultimo %}
+          <span class="entrada-stat-valor entrada-stat-valor-sm">{{ ultimo.criado_em.strftime("%d/%m %H:%M") }}</span>
+          <span class="entrada-stat-sub">{{ ultimo.produto_nome }}</span>
+        {% else %}
+          <span class="entrada-stat-valor entrada-stat-valor-sm">—</span>
+          <span class="entrada-stat-sub">sem registros</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="entrada-grid">
+
+    {# ---------- FORM REGISTRO ---------- #}
+    <aside class="entrada-form-card">
+      <header class="entrada-card-header">
+        <span class="entrada-card-icon" aria-hidden="true">＋</span>
+        <h2 class="entrada-card-titulo">Nova entrada</h2>
+      </header>
+
+      <form method="post" class="entrada-form">
+
+        <div class="entrada-field">
+          <label for="produto_nome">Produto</label>
+          <select name="produto_nome" id="produto_nome" required>
+            <option value="">Selecione um produto…</option>
+            {% for p in produtos %}
+              <option value="{{ p.nome }}">{{ p.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="entrada-field">
+          <label for="quantidade">Quantidade</label>
+          <input type="number"
+                 id="quantidade"
+                 name="quantidade"
+                 min="1"
+                 step="1"
+                 placeholder="0"
+                 inputmode="numeric"
+                 required>
+          <small class="entrada-hint">Unidades adicionadas ao estoque</small>
+        </div>
+
+        <div class="entrada-field">
+          <label for="observacao">Observação <span class="entrada-opt">(opcional)</span></label>
+          <textarea name="observacao" id="observacao" rows="3"
+                    placeholder="Ex.: nota fiscal #123, ajuste de inventário, devolução…"></textarea>
+        </div>
+
+        <button type="submit" class="entrada-submit">
+          <span aria-hidden="true">＋</span>
+          <span>Registrar entrada</span>
+        </button>
+      </form>
+    </aside>
+
+    {# ---------- HISTÓRICO ---------- #}
+    <section class="entrada-historico">
+
+      <header class="entrada-card-header">
+        <span class="entrada-card-icon" aria-hidden="true">📑</span>
+        <h2 class="entrada-card-titulo">Histórico de entradas</h2>
+        <span class="entrada-card-meta">{{ total_registros }} registros</span>
+      </header>
+
+      <form method="get" class="entrada-filtros">
+        <div class="entrada-filtro-campo">
+          <label for="data_inicio">De</label>
+          <input type="date" id="data_inicio" name="data_inicio"
+                 value="{{ request.args.get('data_inicio', '') }}">
+        </div>
+        <div class="entrada-filtro-campo">
+          <label for="data_fim">Até</label>
+          <input type="date" id="data_fim" name="data_fim"
+                 value="{{ request.args.get('data_fim', '') }}">
+        </div>
+        <div class="entrada-filtro-acoes">
+          <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+          <a href="{{ url_for(request.endpoint) }}" class="btn btn-outline btn-sm">Limpar</a>
+        </div>
+      </form>
+
+      {% if entradas %}
+      <div class="entrada-lista">
+        {# desktop: tabela | mobile: cards empilhados via CSS #}
+        <table class="entrada-tabela">
+          <thead>
+            <tr>
+              <th class="col-produto">Produto</th>
+              <th class="col-qtd">Qtd</th>
+              <th class="col-usuario">Usuário</th>
+              <th class="col-data">Data e hora</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in entradas %}
+            <tr {% if e.observacao %}title="{{ e.observacao }}"{% endif %}>
+              <td class="col-produto" data-label="Produto">
+                <div class="entrada-produto-cell">
+                  <span class="entrada-produto-nome">{{ e.produto_nome }}</span>
+                  {% if e.observacao %}
+                  <span class="entrada-produto-obs">{{ e.observacao }}</span>
+                  {% endif %}
+                </div>
+              </td>
+              <td class="col-qtd" data-label="Qtd">
+                <span class="entrada-qtd-pill">+{{ e.quantidade }}</span>
+              </td>
+              <td class="col-usuario" data-label="Usuário">
+                {% if e.usuario %}
+                  <span class="entrada-usuario">
+                    <span class="entrada-usuario-avatar" aria-hidden="true">{{ e.usuario.nome[:1]|upper }}</span>
+                    <span class="entrada-usuario-nome">{{ e.usuario.nome }}</span>
+                  </span>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td class="col-data" data-label="Data">
+                <div class="entrada-data-cell">
+                  <span class="entrada-data-dia">{{ e.criado_em.strftime("%d/%m/%Y") }}</span>
+                  <span class="entrada-data-hora">{{ e.criado_em.strftime("%H:%M") }}</span>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-state-icon" aria-hidden="true">📦</div>
+        <h3 class="empty-state-title">Nenhuma entrada registrada</h3>
+        <p class="empty-state-desc">
+          {% if request.args.get('data_inicio') or request.args.get('data_fim') %}
+            Não há registros para o período selecionado. Tente ampliar o intervalo ou limpe o filtro.
+          {% else %}
+            Use o formulário ao lado para registrar a primeira entrada.
+          {% endif %}
+        </p>
+        {% if request.args.get('data_inicio') or request.args.get('data_fim') %}
+        <div class="empty-state-actions">
+          <a href="{{ url_for(request.endpoint) }}" class="btn btn-outline btn-sm">Limpar filtro</a>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </section>
+
+  </div>
+</div>
+
+{% endblock %}

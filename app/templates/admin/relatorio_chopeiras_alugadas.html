@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Relatório de chopeiras alugadas{% endblock %}
+
+{% block content %}
+
+<div class="relatorio-container">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Chopeiras alugadas</h1>
+      <p class="page-subtitle">Listagem completa das chopeiras atualmente alugadas</p>
+    </div>
+    <div class="page-actions">
+      <a href="{{ url_for('admin.chopeiras') }}" class="btn btn-outline btn-sm">← Voltar</a>
+      <a href="{{ url_for('admin.exportar_relatorio_chopeiras_excel') }}" class="btn btn-success btn-sm">
+        Exportar Excel
+      </a>
+    </div>
+  </div>
+
+  <div class="tabela-wrapper">
+    <table class="tabela tabela-rel">
+      <thead>
+        <tr>
+          <th class="qtd">#</th>
+          <th>Cliente</th>
+          <th>Telefone</th>
+          <th>Endereço</th>
+          <th class="qtd">Data saída</th>
+          <th class="qtd">Dias</th>
+          <th class="qtd">CO₂</th>
+          <th class="qtd">KEG</th>
+          <th class="qtd">Manôm.</th>
+          <th class="qtd">Pingad.</th>
+          <th>Usuário</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for aluguel in alugueis %}
+        <tr>
+          <td class="qtd"><strong>{{ aluguel.chopeira.numero }}</strong></td>
+          <td>{{ aluguel.cliente_nome }}</td>
+          <td>{{ aluguel.telefone or '—' }}</td>
+          <td>{{ aluguel.endereco or '—' }}</td>
+          <td class="qtd">{{ aluguel.data_saida.strftime('%d/%m/%Y') }}</td>
+          <td class="qtd">{{ ((now - aluguel.data_saida).days) if now else '—' }}</td>
+          <td class="qtd">{{ '✓' if aluguel.alugou_co2 else '—' }}</td>
+          <td class="qtd">{{ aluguel.keg_tipo or '—' }}</td>
+          <td class="qtd">{{ '✓' if aluguel.alugou_manometro else '—' }}</td>
+          <td class="qtd">{{ '✓' if aluguel.alugou_pingadeira else '—' }}</td>
+          <td>{{ aluguel.usuario.nome if aluguel.usuario else '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="11" class="vazio">Nenhuma chopeira alugada no momento.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+{% endblock %}

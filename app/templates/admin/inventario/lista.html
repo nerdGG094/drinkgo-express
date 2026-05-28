@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% block title %}Inventário — contagem geral{% endblock %}
+
+{% block content %}
+
+<div class="inventario-page">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Inventário — contagem geral</h1>
+      <p class="page-subtitle">Conta tudo que tem na empresa: itens operacionais (barril, kegs, CO₂, …) + produtos do cardápio.</p>
+    </div>
+    <div class="page-actions">
+      {% if itens|length == 0 and produtos|length == 0 %}
+      <form method="post" action="{{ url_for('admin.inventario_seed_padrao') }}" data-no-loading="true" style="display:inline">
+        <button type="submit" class="btn btn-outline btn-sm">⚡ Criar itens padrão</button>
+      </form>
+      {% endif %}
+      <a href="{{ url_for('admin.inventario_relatorio') }}" class="btn btn-outline btn-sm">📊 Relatório</a>
+      <a href="{{ url_for('admin.inventario_novo') }}" class="btn btn-outline btn-sm">+ Novo item operacional</a>
+      <a href="{{ url_for('admin.inventario_contar') }}" class="btn btn-primary btn-sm">📋 Realizar contagem do dia</a>
+    </div>
+  </div>
+
+  {# ---------- KPIs ---------- #}
+  <div class="inv-stats">
+    <div class="inv-stat-card">
+      <span class="inv-stat-icon" aria-hidden="true">🗃️</span>
+      <div class="inv-stat-body">
+        <span class="inv-stat-label">Itens a contar</span>
+        <span class="inv-stat-valor">{{ total_itens }}</span>
+        <span class="inv-stat-sub">operacionais + produtos</span>
+      </div>
+    </div>
+    <div class="inv-stat-card is-success">
+      <span class="inv-stat-icon" aria-hidden="true">✅</span>
+      <div class="inv-stat-body">
+        <span class="inv-stat-label">Contados hoje</span>
+        <span class="inv-stat-valor">{{ contados_hoje }}</span>
+        <span class="inv-stat-sub">de {{ total_itens }}</span>
+      </div>
+    </div>
+    <div class="inv-stat-card {% if pendentes > 0 %}is-warning{% endif %}">
+      <span class="inv-stat-icon" aria-hidden="true">⏳</span>
+      <div class="inv-stat-body">
+        <span class="inv-stat-label">Pendentes hoje</span>
+        <span class="inv-stat-valor">{{ pendentes }}</span>
+        <span class="inv-stat-sub">aguardando contagem</span>
+      </div>
+    </div>
+    <div class="inv-stat-card {% if em_alerta > 0 %}is-danger{% endif %}">
+      <span class="inv-stat-icon" aria-hidden="true">⚠️</span>
+      <div class="inv-stat-body">
+        <span class="inv-stat-label">Em alerta</span>
+        <span class="inv-stat-valor">{{ em_alerta }}</span>
+        <span class="inv-stat-sub">contagem ≤ alerta</span>
+      </div>
+    </div>
+  </div>
+
+  {% if ultima_cont %}
+  <div class="inv-banner-ultima">
+    <span aria-hidden="true">🕒</span>
+    Última contagem registrada: <strong>{{ ultima_cont.criado_em.strftime('%d/%m/%Y %H:%M') }}</strong>
+    {% if ultima_cont.usuario %}por {{ ultima_cont.usuario.nome }}{% endif %}
+  </div>
+  {% endif %}
+
+  {# ---------- Filtros ---------- #}
+  <form method="get" class="inv-filtros" id="invFiltros">
+    <div class="inv-busca">
+      <input type="text" name="q" value="{{ busca }}"
+             placeholder="🔎 Buscar por nome…" aria-label="Buscar item">
+    </div>
+
+    <nav class="inv-chips" aria-label="Filtrar tipo">
+      <a href="?tipo=todos{% if busca %}&q={{ busca }}{% endif %}"
+         class="chip-filtro {% if tipo_filtro == 'todos' %}active{% endif %}">Todos</a>
+      <a href="?tipo=item{% if busca %}&q={{ busca }}{% endif %}"
+         class="chip-filtro {% if tipo_filtro == 'item' %}active{% endif %}">🗃️ Operacionais</a>
+      <a href="?tipo=produto{% if busca %}&q={{ busca }}{% endif %}"
+         class="chip-filtro {% if tipo_filtro == 'produto' %}active{% endif %}">🍺 Cardápio</a>
+    </nav>
+  </form>
+
+  {# ============ ITENS OPERACIONAIS ============ #}
+  {% if itens %}
+  <h2 class="inv-section-titulo">
+    <span aria-hidden="true">🗃️</span>
+    Itens operacionais
+    <span class="inv-section-count">{{ itens|length }}</span>
+  </h2>
+  <div class="inv-grid">
+    {% for it in itens %}
+    {% set st = it.status_contagem %}
+    <a class="inv-card status-{{ st }} {% if it.em_alerta %}is-alerta{% endif %}"
+       href="{{ url_for('admin.inventario_item', item_id=it.id) }}">
+
+      <span class="inv-card-tile" aria-hidden="true">{{ it.icone or '📦' }}</span>
+
+      <div class="inv-card-body">
+        <span class="inv-card-categoria">
+          <span class="inv-tipo-badge inv-tipo-item">OPERACIONAL</span>
+          · {{ it.categoria|upper }}
+        </span>
+        <h3 class="inv-card-nome">{{ it.nome }}</h3>
+        <span class="inv-card-meta">
+          {% if st == 'contado' %}
+            <span class="inv-pill inv-pill-ok">✓ Contado hoje</span>
+          {% elif st == 'pendente' %}
+            <span class="inv-pill inv-pill-warn">⏳ Não contado hoje</span>
+          {% elif st == 'desatualizado' %}
+            <span class="inv-pill inv-pill-old">{{ it.ultima_contagem_data.strftime('%d/%m') }} — desatualizado</span>
+          {% else %}
+            <span class="inv-pill inv-pill-empty">— Nunca contado</span>
+          {% endif %}
+          {% if it.em_alerta %}<span class="inv-pill inv-pill-danger">⚠ alerta</span>{% endif %}
+        </span>
+      </div>
+
+      <div class="inv-card-qtd">
+        {% if it.ultima_quantidade is not none %}
+          <span class="inv-card-qtd-num">{{ it.ultima_quantidade }}</span>
+          <span class="inv-card-qtd-unidade">{{ it.unidade }}</span>
+        {% else %}
+          <span class="inv-card-qtd-num inv-card-qtd-vazio">—</span>
+          <span class="inv-card-qtd-unidade">{{ it.unidade }}</span>
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ============ PRODUTOS DO CARDÁPIO ============ #}
+  {% if produtos %}
+  <h2 class="inv-section-titulo">
+    <span aria-hidden="true">🍺</span>
+    Produtos do cardápio
+    <span class="inv-section-count">{{ produtos|length }}</span>
+  </h2>
+  <div class="inv-grid">
+    {% for p in produtos %}
+    {% set st = p.status_contagem %}
+    <a class="inv-card inv-card-produto status-{{ st }} {% if p.em_alerta %}is-alerta{% endif %}"
+       href="{{ url_for('admin.inventario_produto', produto_id=p.id) }}">
+
+      <span class="inv-card-tile" aria-hidden="true">🍺</span>
+
+      <div class="inv-card-body">
+        <span class="inv-card-categoria">
+          <span class="inv-tipo-badge inv-tipo-produto">CARDÁPIO</span>
+        </span>
+        <h3 class="inv-card-nome">{{ p.nome }}</h3>
+        <span class="inv-card-meta">
+          {% if st == 'contado' %}
+            <span class="inv-pill inv-pill-ok">✓ Contado hoje</span>
+          {% elif st == 'pendente' %}
+            <span class="inv-pill inv-pill-warn">⏳ Não contado hoje</span>
+          {% elif st == 'desatualizado' %}
+            <span class="inv-pill inv-pill-old">{{ p.ultima_contagem_data.strftime('%d/%m') }} — desatualizado</span>
+          {% else %}
+            <span class="inv-pill inv-pill-empty">— Nunca contado</span>
+          {% endif %}
+          {% if p.em_alerta %}<span class="inv-pill inv-pill-danger">⚠ alerta</span>{% endif %}
+        </span>
+      </div>
+
+      <div class="inv-card-qtd">
+        {% if p.ultima_quantidade is not none %}
+          <span class="inv-card-qtd-num">{{ p.ultima_quantidade }}</span>
+          <span class="inv-card-qtd-unidade">un</span>
+        {% else %}
+          <span class="inv-card-qtd-num inv-card-qtd-vazio">—</span>
+          <span class="inv-card-qtd-unidade">un</span>
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ============ EMPTY STATE ============ #}
+  {% if not itens and not produtos %}
+  <div class="empty-state">
+    <div class="empty-state-icon" aria-hidden="true">🗃️</div>
+    <h2 class="empty-state-title">Nada para contar</h2>
+    <p class="empty-state-desc">
+      {% if busca or tipo_filtro != 'todos' %}
+        Ajuste o filtro acima ou volte para "Todos".
+      {% else %}
+        Cadastre itens operacionais ou produtos no cardápio para começar a contar.
+      {% endif %}
+    </p>
+    <div class="empty-state-actions">
+      {% if busca or tipo_filtro != 'todos' %}
+        <a href="?tipo=todos" class="btn btn-outline btn-sm">Limpar filtros</a>
+      {% else %}
+        <form method="post" action="{{ url_for('admin.inventario_seed_padrao') }}" data-no-loading="true" style="display:inline">
+          <button type="submit" class="btn btn-outline btn-sm">⚡ Criar itens padrão</button>
+        </form>
+      {% endif %}
+      <a href="{{ url_for('admin.inventario_novo') }}" class="btn btn-primary btn-sm">+ Novo item</a>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const form = document.getElementById('invFiltros');
+    if (!form) return;
+    const input = form.querySelector('input[name="q"]');
+    if (!input) return;
+    let t;
+    input.addEventListener('input', () => {
+      clearTimeout(t);
+      t = setTimeout(() => form.submit(), 450);
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); form.submit(); }
+    });
+  })();
+</script>
+{% endblock %}

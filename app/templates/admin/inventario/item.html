@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}{{ alvo.nome }} — Inventário{% endblock %}
+
+{% block content %}
+
+{% set st = alvo.status_contagem %}
+{% set is_produto = (kind == 'produto') %}
+{% set unidade = ('un' if is_produto else alvo.unidade) %}
+
+<div class="inventario-page">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">
+        <span class="inv-titulo-icone" aria-hidden="true">{{ '🍺' if is_produto else (alvo.icone or '📦') }}</span>
+        {{ alvo.nome }}
+      </h1>
+      <p class="page-subtitle">
+        {% if is_produto %}
+          <span class="badge badge-info">CARDÁPIO</span>
+        {% else %}
+          <span class="badge badge-muted">OPERACIONAL · {{ alvo.categoria|upper }}</span>
+        {% endif %}
+
+        {% if st == 'contado' %}
+          <span class="badge badge-success">Contado hoje</span>
+        {% elif st == 'pendente' %}
+          <span class="badge badge-warn">Não contado hoje</span>
+        {% elif st == 'desatualizado' %}
+          <span class="badge badge-warn">Desatualizado</span>
+        {% else %}
+          <span class="badge badge-muted">Nunca contado</span>
+        {% endif %}
+        {% if alvo.em_alerta %}<span class="badge badge-danger">⚠ EM ALERTA</span>{% endif %}
+        {% if not alvo.ativo %}<span class="badge badge-danger">INATIVO</span>{% endif %}
+      </p>
+    </div>
+    <div class="page-actions">
+      <a href="{{ url_for('admin.inventario') }}" class="btn btn-outline btn-sm">← Voltar</a>
+      {% if is_produto %}
+        <a href="{{ url_for('admin.produtos_editar', produto_id=alvo.id) }}" class="btn btn-info btn-sm">Editar produto</a>
+      {% else %}
+        <a href="{{ url_for('admin.inventario_editar', item_id=alvo.id) }}" class="btn btn-info btn-sm">Editar item</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="inv-detail-grid">
+
+    <aside class="inv-detail-aside">
+
+      <div class="inv-saldo-card">
+        <span class="inv-saldo-label">Última contagem</span>
+        <div class="inv-saldo-row">
+          {% if alvo.ultima_quantidade is not none %}
+            <span class="inv-saldo-num">{{ alvo.ultima_quantidade }}</span>
+            <span class="inv-saldo-unidade">{{ unidade }}</span>
+          {% else %}
+            <span class="inv-saldo-num">—</span>
+          {% endif %}
+        </div>
+        {% if alvo.ultima_contagem_data %}
+          <span class="inv-saldo-meta">em {{ alvo.ultima_contagem_data.strftime('%d/%m/%Y') }}</span>
+        {% else %}
+          <span class="inv-saldo-meta">sem registro</span>
+        {% endif %}
+        {% if alvo.alerta_se_abaixo is not none %}
+          <span class="inv-saldo-meta">Alerta se ≤ {{ alvo.alerta_se_abaixo }} {{ unidade }}</span>
+        {% endif %}
+      </div>
+
+      <div class="inv-acoes-card">
+        <h3 class="inv-acoes-titulo">Lançar contagem rápida</h3>
+        <form method="post"
+              action="{% if is_produto %}{{ url_for('admin.inventario_produto_contagem_rapida', produto_id=alvo.id) }}{% else %}{{ url_for('admin.inventario_item_contagem_rapida', item_id=alvo.id) }}{% endif %}"
+              class="inv-acao-form">
+          <div class="inv-acao-field">
+            <label for="qtdInput">Quantidade contada hoje</label>
+            <input id="qtdInput" type="number" name="quantidade" min="0" step="1"
+                   inputmode="numeric" required placeholder="0">
+          </div>
+          <div class="inv-acao-field">
+            <label for="obsInput">Observação <span class="hint">(opcional)</span></label>
+            <input id="obsInput" type="text" name="observacao" maxlength="200"
+                   placeholder="Ex.: 1 quebrado, sem reposição...">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Registrar contagem</button>
+        </form>
+      </div>
+
+    </aside>
+
+    <div class="inv-detail-main">
+
+      <section class="form-section">
+        <header class="form-section-header">
+          <span class="form-section-icon" aria-hidden="true">ℹ️</span>
+          <h2 class="form-section-titulo">Informações</h2>
+        </header>
+        <div class="form-section-body inv-info-body">
+          {% if is_produto %}
+          <div class="inv-info-row">
+            <span class="inv-info-label">Tipo</span>
+            <span class="inv-info-valor">Produto do cardápio</span>
+          </div>
+          <div class="inv-info-row">
+            <span class="inv-info-label">Preço de venda</span>
+            <span class="inv-info-valor">R$ {{ '%.2f'|format(alvo.preco|float) }}</span>
+          </div>
+          {% else %}
+          <div class="inv-info-row">
+            <span class="inv-info-label">Slug</span>
+            <span class="inv-info-valor"><code>{{ alvo.slug }}</code></span>
+          </div>
+          <div class="inv-info-row">
+            <span class="inv-info-label">Categoria</span>
+            <span class="inv-info-valor">{{ alvo.categoria|capitalize }}</span>
+          </div>
+          <div class="inv-info-row">
+            <span class="inv-info-label">Unidade</span>
+            <span class="inv-info-valor">{{ alvo.unidade }}</span>
+          </div>
+          {% endif %}
+
+          <div class="inv-info-row">
+            <span class="inv-info-label">Alerta se ≤</span>
+            <span class="inv-info-valor">
+              {% if alvo.alerta_se_abaixo is not none %}{{ alvo.alerta_se_abaixo }} {{ unidade }}{% else %}—{% endif %}
+            </span>
+          </div>
+
+          {% if not is_produto and alvo.observacao %}
+          <div class="inv-info-row inv-info-row-block">
+            <span class="inv-info-label">Observação</span>
+            <span class="inv-info-valor">{{ alvo.observacao }}</span>
+          </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="form-section">
+        <header class="form-section-header">
+          <span class="form-section-icon" aria-hidden="true">📜</span>
+          <h2 class="form-section-titulo">Histórico de contagens</h2>
+          <span class="form-section-acoes">
+            <span class="badge badge-muted">{{ historico|length }} registro(s)</span>
+          </span>
+        </header>
+
+        {% if historico %}
+        <ul class="inv-mov-lista">
+          {% for h in historico %}
+          {% set c = h.c %}
+          <li class="inv-mov is-contagem">
+            <span class="inv-mov-icon" aria-hidden="true">📋</span>
+            <div class="inv-mov-body">
+              <span class="inv-mov-titulo">
+                {{ c.quantidade }} {{ unidade }}
+                {% if h.delta is not none %}
+                  {% if h.delta == 0 %}
+                    <span class="inv-delta is-zero">= 0</span>
+                  {% elif h.delta > 0 %}
+                    <span class="inv-delta is-up">+{{ h.delta }}</span>
+                  {% else %}
+                    <span class="inv-delta is-down">{{ h.delta }}</span>
+                  {% endif %}
+                {% endif %}
+              </span>
+              {% if c.observacao %}<span class="inv-mov-motivo">{{ c.observacao }}</span>{% endif %}
+              <span class="inv-mov-meta">
+                {% if c.usuario %}
+                  <span class="inv-mov-usuario-avatar">{{ c.usuario.nome[:1]|upper }}</span>
+                  {{ c.usuario.nome }}
+                {% else %}Sistema{% endif %}
+                · contagem de {{ c.data.strftime('%d/%m/%Y') }}
+                · registrada em {{ c.criado_em.strftime('%H:%M') }}
+              </span>
+            </div>
+
+            <form method="post"
+                  action="{{ url_for('admin.inventario_excluir_contagem', contagem_id=c.id) }}"
+                  data-confirm="Excluir esta contagem? Não é possível desfazer."
+                  data-no-loading="true"
+                  class="inv-mov-excluir">
+              <button type="submit" title="Remover esta contagem" aria-label="Remover">×</button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state" style="margin: var(--sp-3); padding: var(--sp-6) var(--sp-4);">
+          <div class="empty-state-icon" aria-hidden="true">📜</div>
+          <p class="empty-state-desc">Ainda não há contagens registradas para este {{ 'produto' if is_produto else 'item' }}.</p>
+        </div>
+        {% endif %}
+      </section>
+
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

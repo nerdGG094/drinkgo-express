@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Pedido enviado{% endblock %}
+
+{% block content %}
+
+<div class="pedido-enviado-container">
+  <div class="pedido-enviado-card card">
+
+    <div class="enviado-icone">
+      <div class="check-circle">✓</div>
+    </div>
+
+    <h1 class="titulo">Pedido enviado com sucesso!</h1>
+    <p class="subtitulo">Seu pedido foi registrado e encaminhado para a cozinha.</p>
+
+    <div class="detalhes">
+      {% if pedido.tipo == 'mesa' and pedido.mesa %}
+        <p class="info-linha">🪑 Mesa <strong>{{ pedido.mesa.numero }}</strong> · Pedido #{{ pedido.id }}</p>
+      {% elif pedido.tipo == 'retirada' %}
+        <p class="info-linha">📍 Retirada — <strong>{{ pedido.cliente_nome }}</strong> · Pedido #{{ pedido.id }}</p>
+      {% elif pedido.tipo == 'delivery' %}
+        <p class="info-linha">🛵 Delivery — <strong>{{ pedido.cliente_nome }}</strong> · Pedido #{{ pedido.id }}</p>
+        <p class="info-sub">Endereço: {{ pedido.endereco }}</p>
+      {% endif %}
+
+      {% if pedido.garcom %}
+      <p class="info-sub">Atendente: <strong>{{ pedido.garcom.nome }}</strong></p>
+      {% endif %}
+    </div>
+
+    <div class="acoes">
+      <a class="btn btn-primary btn-lg btn-block" href="{{ url_for('public.novo') }}">
+        Novo pedido
+      </a>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

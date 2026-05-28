@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar Produto' if produto else 'Novo Produto' }}{% endblock %}
+
+{% block content %}
+
+<div class="produto-form-container">
+  <div class="produto-form-card card">
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">{{ 'Editar produto' if produto else 'Novo produto' }}</h1>
+        <p class="page-subtitle">{{ 'Atualize os dados do item do cardápio' if produto else 'Cadastre um novo item no cardápio' }}</p>
+      </div>
+      <div class="page-actions">
+        <a href="{{ url_for('admin.produtos') }}" class="btn btn-outline btn-sm">← Voltar</a>
+      </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="form form-produto">
+
+      <div class="input-group">
+        <label>Descrição</label>
+        <input type="text" name="nome" value="{{ produto.nome if produto else '' }}" required>
+      </div>
+
+      <div class="input-group">
+        <label>Categoria</label>
+        <select name="categoria_id" required>
+          <option value="">Selecione a categoria…</option>
+          {% for c in categorias %}
+            <option value="{{ c.id }}"
+                    {% if produto and produto.categoria_id == c.id %}selected{% endif %}>
+              {{ c.nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>Preço (R$)</label>
+        <input type="text" name="preco" value="{{ produto.preco if produto else '' }}" required>
+      </div>
+
+      {% if produto and produto.foto %}
+      <div class="foto-atual-bloco">
+        <label>Foto atual</label>
+        <img src="{{ url_for('static', filename='imagens_produtos/' ~ produto.foto) }}" class="foto-preview" alt="Foto atual">
+      </div>
+      {% endif %}
+
+      <div class="input-group">
+        <label>{{ 'Nova foto (opcional)' if produto else 'Foto (opcional)' }}</label>
+        <input type="file" name="foto_arquivo" accept="image/*">
+      </div>
+
+      <div class="grupo-form check">
+        <label class="switch">
+          <input type="checkbox" name="ativo"
+                 {% if produto and produto.ativo %}checked{% endif %}
+                 {% if not produto %}checked{% endif %}>
+          <span class="slider"></span>
+        </label>
+        <span class="lbl-ativo">Ativo (aparece no cardápio)</span>
+      </div>
+
+      <button class="btn btn-primary btn-lg btn-block" type="submit">
+        Salvar produto
+      </button>
+
+    </form>
+  </div>
+</div>
+
+{% endblock %}

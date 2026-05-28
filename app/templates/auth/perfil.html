@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}Editar perfil{% endblock %}
+
+{% block content %}
+
+<div class="usuario-form-page">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Editar perfil</h1>
+      <p class="page-subtitle">Atualize sua foto, dados pessoais e senha de acesso.</p>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="usuario-form-grid" id="formPerfil">
+
+    {# ============ PREVIEW LATERAL ============ #}
+    <aside class="usuario-preview">
+      <div class="usuario-preview-foto-wrap">
+        {% if user.foto %}
+          <img id="previewFoto"
+               class="usuario-preview-foto"
+               src="{{ url_for('imagem_usuario', filename=user.foto) }}"
+               alt="Foto de {{ user.nome }}">
+        {% else %}
+          <div id="previewFotoFallback" class="usuario-preview-avatar">{{ user.nome[:1]|upper }}</div>
+          <img id="previewFoto" class="usuario-preview-foto" src="" alt="" hidden>
+        {% endif %}
+
+        <label for="fotoInput" class="usuario-foto-trocar" title="Trocar foto">
+          <span aria-hidden="true">📷</span>
+          <span>Trocar foto</span>
+        </label>
+        <input type="file" id="fotoInput" name="foto_arquivo"
+               accept="image/png,image/jpeg,image/gif,image/webp" hidden>
+
+        {% if user.foto %}
+        <label class="usuario-foto-remover">
+          <input type="checkbox" name="remover_foto" value="1">
+          Remover foto atual
+        </label>
+        {% endif %}
+      </div>
+
+      <h2 class="usuario-preview-nome" id="previewNome">{{ user.nome }}</h2>
+      <span class="usuario-preview-email" id="previewEmail">{{ user.email }}</span>
+
+      <div class="usuario-preview-badges">
+        <span class="badge badge-info">{{ user.role|upper }}</span>
+        <span class="badge {{ 'badge-success' if user.ativo else 'badge-danger' }}">
+          {{ 'ATIVO' if user.ativo else 'INATIVO' }}
+        </span>
+      </div>
+    </aside>
+
+    {# ============ FORM PRINCIPAL ============ #}
+    <div class="usuario-main">
+
+      <section class="form-section">
+        <header class="form-section-header">
+          <span class="form-section-icon" aria-hidden="true">👤</span>
+          <h2 class="form-section-titulo">Dados pessoais</h2>
+        </header>
+        <div class="form-section-body">
+          <div class="usuario-fields-grid">
+            <div class="usuario-field">
+              <label for="nomeInput">Nome completo</label>
+              <input id="nomeInput" type="text" name="nome"
+                     value="{{ user.nome }}" required
+                     placeholder="Seu nome">
+            </div>
+            <div class="usuario-field">
+              <label for="emailInput">E-mail</label>
+              <input id="emailInput" type="email" name="email"
+                     value="{{ user.email }}" required
+                     placeholder="seu@email.com">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <header class="form-section-header">
+          <span class="form-section-icon" aria-hidden="true">🔒</span>
+          <h2 class="form-section-titulo">Senha</h2>
+        </header>
+        <div class="form-section-body">
+
+          <div class="usuario-field" style="grid-column: 1 / -1;">
+            <label class="senha-trocar-label">
+              <input type="checkbox" name="alterar_senha" id="alterarSenhaChk" value="1">
+              <span>Quero alterar minha senha</span>
+            </label>
+
+            <div class="senha-bloco" id="senhaBloco" hidden>
+              <div class="usuario-fields-grid">
+                <div class="usuario-field" style="grid-column: 1 / -1;">
+                  <label for="senhaAtualInput">Senha atual</label>
+                  <input id="senhaAtualInput" type="password" name="senha_atual"
+                         autocomplete="current-password"
+                         placeholder="Sua senha atual">
+                </div>
+                <div class="usuario-field">
+                  <label for="senhaInput">Nova senha</label>
+                  <div class="usuario-senha-wrap">
+                    <input id="senhaInput" type="password" name="senha"
+                           autocomplete="new-password"
+                           placeholder="Mínimo 4 caracteres">
+                    <button type="button" class="usuario-senha-toggle"
+                            aria-label="Mostrar/ocultar senha" id="btnTogglePassword">
+                      <span aria-hidden="true">👁</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="usuario-field">
+                  <label for="senhaConfInput">Confirmar nova senha</label>
+                  <input id="senhaConfInput" type="password" name="senha_confirmar"
+                         autocomplete="new-password"
+                         placeholder="Digite a senha novamente">
+                  <small class="usuario-hint" id="senhaMatchHint"></small>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <div class="usuario-form-actions">
+        <a href="{{ url_for('index') }}" class="btn btn-outline">Cancelar</a>
+        <button type="submit" class="btn btn-primary btn-lg">Salvar alterações</button>
+      </div>
+
+    </div>
+  </form>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const form = document.getElementById('formPerfil');
+    if (!form) return;
+
+    /* ---------- Preview foto ao escolher arquivo ---------- */
+    const fotoInput = document.getElementById('fotoInput');
+    const previewFoto = document.getElementById('previewFoto');
+    const previewFallback = document.getElementById('previewFotoFallback');
+
+    if (fotoInput) {
+      fotoInput.addEventListener('change', () => {
+        const file = fotoInput.files && fotoInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previewFoto.src = e.target.result;
+          previewFoto.hidden = false;
+          if (previewFallback) previewFallback.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    /* ---------- Preview nome/email ---------- */
+    const inputNome = document.getElementById('nomeInput');
+    const inputEmail = document.getElementById('emailInput');
+    const elNome = document.getElementById('previewNome');
+    const elEmail = document.getElementById('previewEmail');
+
+    if (inputNome && elNome) {
+      inputNome.addEventListener('input', () => {
+        elNome.textContent = (inputNome.value || '').trim() || 'Sem nome';
+        if (previewFallback) previewFallback.textContent = (inputNome.value || '?').charAt(0).toUpperCase();
+      });
+    }
+    if (inputEmail && elEmail) {
+      inputEmail.addEventListener('input', () => {
+        elEmail.textContent = (inputEmail.value || '').trim() || 'sem e-mail';
+      });
+    }
+
+    /* ---------- Toggle senha ---------- */
+    const btnPwd = document.getElementById('btnTogglePassword');
+    const inpPwd = document.getElementById('senhaInput');
+    const inpPwd2 = document.getElementById('senhaConfInput');
+    if (btnPwd && inpPwd) {
+      btnPwd.addEventListener('click', () => {
+        const isPwd = inpPwd.type === 'password';
+        inpPwd.type = isPwd ? 'text' : 'password';
+        if (inpPwd2) inpPwd2.type = inpPwd.type;
+        btnPwd.classList.toggle('is-on', isPwd);
+      });
+    }
+
+    /* ---------- Toggle alterar senha + match ao vivo ---------- */
+    const chkAlterar = document.getElementById('alterarSenhaChk');
+    const senhaBloco = document.getElementById('senhaBloco');
+    const matchHint = document.getElementById('senhaMatchHint');
+    const inpAtual = document.getElementById('senhaAtualInput');
+
+    if (chkAlterar && senhaBloco) {
+      const aplicar = () => {
+        const ativo = chkAlterar.checked;
+        senhaBloco.hidden = !ativo;
+        if (inpAtual) inpAtual.required = ativo;
+        if (inpPwd) inpPwd.required = ativo;
+        if (!ativo) {
+          if (inpAtual) inpAtual.value = '';
+          if (inpPwd) inpPwd.value = '';
+          if (inpPwd2) inpPwd2.value = '';
+          if (matchHint) { matchHint.textContent = ''; matchHint.classList.remove('is-ok','is-error'); }
+        }
+      };
+      chkAlterar.addEventListener('change', aplicar);
+      aplicar();
+    }
+
+    if (inpPwd && inpPwd2 && matchHint) {
+      const verif = () => {
+        if (!inpPwd.value && !inpPwd2.value) {
+          matchHint.textContent = '';
+          matchHint.classList.remove('is-ok','is-error');
+          return;
+        }
+        if (inpPwd.value && inpPwd.value === inpPwd2.value) {
+          matchHint.textContent = '✓ As senhas coincidem';
+          matchHint.classList.add('is-ok'); matchHint.classList.remove('is-error');
+        } else {
+          matchHint.textContent = '✗ As senhas não coincidem';
+          matchHint.classList.add('is-error'); matchHint.classList.remove('is-ok');
+        }
+      };
+      inpPwd.addEventListener('input', verif);
+      inpPwd2.addEventListener('input', verif);
+    }
+
+    form.addEventListener('submit', (e) => {
+      if (chkAlterar && chkAlterar.checked) {
+        if (!inpPwd.value || inpPwd.value !== (inpPwd2 ? inpPwd2.value : '')) {
+          e.preventDefault();
+          alert('As senhas não coincidem. Corrija ou desmarque "Alterar senha".');
+          inpPwd.focus();
+        }
+      }
+    });
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Produtos{% endblock %}
+
+{% block content %}
+
+<div class="produtos-container">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Produtos</h1>
+      <p class="page-subtitle">Cardápio e categorias</p>
+    </div>
+    <div class="page-actions">
+      <a href="{{ url_for('admin.categoria_novo') }}" class="btn btn-outline btn-sm">+ Nova categoria</a>
+      <a href="{{ url_for('admin.produtos_novo') }}" class="btn btn-primary btn-sm">+ Novo produto</a>
+    </div>
+  </div>
+
+  <!-- Filtro em chips -->
+  <nav class="chips-filtro" aria-label="Filtrar por categoria">
+    <a href="?categoria=todas"
+       class="chip {% if categoria_filtro == 'todas' %}active{% endif %}">
+      Todas
+    </a>
+    {% for cat in categorias %}
+      <a href="?categoria={{ cat }}"
+         class="chip {% if categoria_filtro == cat %}active{% endif %}">
+        {{ cat }}
+      </a>
+    {% endfor %}
+  </nav>
+
+  {% if produtos_por_categoria %}
+
+    {% for categoria, produtos_cat in produtos_por_categoria.items() %}
+    <details class="categoria-secao">
+
+      <summary class="categoria-secao-header">
+        <span class="categoria-secao-titulo-wrap">
+          <h2 class="categoria-secao-titulo">{{ categoria }}</h2>
+          <span class="categoria-secao-contador">{{ produtos_cat|length }}</span>
+        </span>
+        <span class="categoria-secao-toggle" aria-hidden="true">+</span>
+      </summary>
+
+      <div class="produtos-galeria">
+        {% for p in produtos_cat %}
+        <article class="produto-galeria-card {% if not p.ativo %}is-inativo{% endif %}">
+
+          <div class="produto-galeria-foto">
+            {% if p.foto %}
+              <img src="{{ url_for('admin.imagem_produto', filename=p.foto) }}"
+                   alt="{{ p.nome }}" loading="lazy">
+            {% else %}
+              <div class="produto-galeria-sem-foto">
+                <span>Sem foto</span>
+              </div>
+            {% endif %}
+
+            <span class="produto-galeria-status badge {% if p.ativo %}badge-success{% else %}badge-danger{% endif %}">
+              {% if p.ativo %}Ativo{% else %}Inativo{% endif %}
+            </span>
+          </div>
+
+          <div class="produto-galeria-info">
+            <span class="produto-galeria-categoria">{{ p.categoria_nome }}</span>
+            <h3 class="produto-galeria-nome" title="{{ p.nome }}">{{ p.nome }}</h3>
+            <span class="produto-galeria-preco">R$ {{ "%.2f"|format(p.preco) }}</span>
+          </div>
+
+          <a href="{{ url_for('admin.produtos_editar', produto_id=p.id) }}"
+             class="produto-galeria-editar">
+            Editar
+          </a>
+
+        </article>
+        {% endfor %}
+      </div>
+
+    </details>
+    {% endfor %}
+
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon" aria-hidden="true">📦</div>
+      <h2 class="empty-state-title">Nenhum produto encontrado</h2>
+      <p class="empty-state-desc">
+        {% if categoria_filtro and categoria_filtro != 'todas' %}
+          Não há produtos cadastrados na categoria selecionada.
+        {% else %}
+          Cadastre o primeiro produto para começar a montar seu cardápio.
+        {% endif %}
+      </p>
+      <div class="empty-state-actions">
+        {% if categoria_filtro and categoria_filtro != 'todas' %}
+          <a href="?categoria=todas" class="btn btn-outline btn-sm">Ver todas as categorias</a>
+        {% endif %}
+        <a href="{{ url_for('admin.produtos_novo') }}" class="btn btn-primary btn-sm">+ Novo produto</a>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="paginacao">
+    {% if pagina_atual is defined and pagina_atual > 1 %}
+      <a href="?pagina={{ pagina_atual - 1 }}&categoria={{ categoria_filtro }}" class="btn btn-outline btn-sm">← Anterior</a>
+    {% endif %}
+
+    {% if total_paginas is defined %}
+    <span class="page-info">Página {{ pagina_atual }} de {{ total_paginas }}</span>
+    {% endif %}
+
+    {% if total_paginas is defined and pagina_atual < total_paginas %}
+      <a href="?pagina={{ pagina_atual + 1 }}&categoria={{ categoria_filtro }}" class="btn btn-outline btn-sm">Próxima →</a>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}

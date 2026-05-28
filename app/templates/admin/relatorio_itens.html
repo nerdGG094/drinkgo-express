@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Relatório de itens vendidos{% endblock %}
+
+{% block content %}
+
+{% set itens_ord = itens|sort(attribute='qtd', reverse=True) %}
+{% set max_qtd = itens_ord[0].qtd if itens_ord else 0 %}
+{% set total_qtd = itens|sum(attribute='qtd') %}
+{% set total_valor = itens|sum(attribute='total') %}
+{% set dias = (data_fim - data_ini).days + 1 %}
+{% set top = itens_ord[0] if itens_ord else None %}
+
+<div class="relatorio-page" data-tipo="vendas">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Relatório de itens vendidos</h1>
+      <p class="page-subtitle">Não inclui pedidos com NFe emitida</p>
+    </div>
+    <div class="page-actions">
+      <a href="{{ url_for('admin.exportar_relatorio_csv',
+                          data_ini=data_ini.isoformat(),
+                          data_fim=data_fim.isoformat()) }}"
+         class="btn btn-success btn-sm">
+        ⤓ Exportar CSV
+      </a>
+    </div>
+  </div>
+
+  {% include "admin/_relatorio_partial.html" %}
+
+</div>
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/relatorios.js') }}"></script>
+{% endblock %}
+{% endblock %}

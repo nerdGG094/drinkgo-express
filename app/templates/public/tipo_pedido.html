@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Novo pedido{% endblock %}
+
+{% block content %}
+
+<div class="container-novo-pedido">
+
+  <header class="novo-pedido-hero">
+    <span class="novo-pedido-eyebrow">Novo pedido</span>
+    <h1 class="novo-pedido-titulo">Como vai ser o atendimento?</h1>
+    <p class="novo-pedido-subtitulo">Escolha um dos tipos abaixo para iniciar</p>
+  </header>
+
+  <div class="grid-opcoes">
+
+    <a class="opcao-card opcao-mesa" href="{{ url_for('public.mesas') }}">
+      <span class="opcao-icone-tile" aria-hidden="true">🪑</span>
+
+      <div class="opcao-conteudo">
+        <span class="opcao-meta">No salão</span>
+        <h2 class="opcao-label">Pedido por Mesa</h2>
+        <p class="opcao-desc">Atendimento presencial — selecione a mesa do cliente</p>
+      </div>
+
+      <span class="opcao-seta" aria-hidden="true">→</span>
+    </a>
+
+    <a class="opcao-card opcao-retirada" href="{{ url_for('public.retirada') }}">
+      <span class="opcao-icone-tile" aria-hidden="true">🥡</span>
+
+      <div class="opcao-conteudo">
+        <span class="opcao-meta">Balcão</span>
+        <h2 class="opcao-label">Retirada no Local</h2>
+        <p class="opcao-desc">Cliente irá buscar o pedido no estabelecimento</p>
+      </div>
+
+      <span class="opcao-seta" aria-hidden="true">→</span>
+    </a>
+
+    {% if current_user.role in ["caixa", "admin", "garcom"] %}
+    <a class="opcao-card opcao-delivery" href="{{ url_for('public.delivery') }}">
+      <span class="opcao-icone-tile" aria-hidden="true">🛵</span>
+
+      <div class="opcao-conteudo">
+        <span class="opcao-meta">Entrega</span>
+        <h2 class="opcao-label">Delivery</h2>
+        <p class="opcao-desc">Entregar no endereço informado pelo cliente</p>
+      </div>
+
+      <span class="opcao-seta" aria-hidden="true">→</span>
+    </a>
+    {% endif %}
+
+  </div>
+
+</div>
+
+{% endblock %}

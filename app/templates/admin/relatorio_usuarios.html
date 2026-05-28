@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Pedidos por usuário{% endblock %}
+
+{% block content %}
+
+<div class="relatorio-usuarios-page">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Pedidos por usuário</h1>
+      <p class="page-subtitle">
+        Quantos pedidos cada um lançou — por mesa, retirada e delivery — e quanto movimentou
+      </p>
+    </div>
+    <div class="page-actions">
+      <a href="{{ url_for('admin.exportar_relatorio_usuarios_csv',
+                          data_ini=data_ini.isoformat(),
+                          data_fim=data_fim.isoformat()) }}"
+         class="btn btn-success btn-sm">
+        ⤓ Exportar CSV
+      </a>
+    </div>
+  </div>
+
+  {# ----------------- FILTRO DE PERÍODO ----------------- #}
+  <form method="get" class="filtros-relatorio">
+    <div class="filtro-campo">
+      <label for="data_ini">De</label>
+      <input type="date" id="data_ini" name="data_ini"
+             value="{{ data_ini.isoformat() }}" class="form-control">
+    </div>
+    <div class="filtro-campo">
+      <label for="data_fim">Até</label>
+      <input type="date" id="data_fim" name="data_fim"
+             value="{{ data_fim.isoformat() }}" class="form-control">
+    </div>
+    <div class="filtro-botoes">
+      <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+      <a href="{{ url_for('admin.relatorio_usuarios') }}" class="btn btn-outline btn-sm">Hoje</a>
+    </div>
+  </form>
+
+  {# ----------------- CARDS DE TOTAL GERAL ----------------- #}
+  <div class="kpis-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Total de pedidos</div>
+      <div class="kpi-value">{{ total_geral.total_pedidos }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">🪑 Mesas</div>
+      <div class="kpi-value">{{ total_geral.mesas }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">📍 Retiradas</div>
+      <div class="kpi-value">{{ total_geral.retiradas }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">🚛 Deliveries</div>
+      <div class="kpi-value">{{ total_geral.deliveries }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">✕ Cancelados</div>
+      <div class="kpi-value">{{ total_geral.cancelados }}</div>
+    </div>
+    <div class="kpi-card kpi-destaque">
+      <div class="kpi-label">Valor total</div>
+      <div class="kpi-value">R$ {{ '%.2f'|format(total_geral.valor) }}</div>
+    </div>
+  </div>
+
+  {# ----------------- TABELA POR USUÁRIO ----------------- #}
+  <div class="tabela-wrapper" style="margin-top: var(--sp-4);">
+    <table class="tabela tabela-usuarios">
+      <thead>
+        <tr>
+          <th>Usuário</th>
+          <th class="t-center">Role</th>
+          <th class="t-center">🪑 Mesas</th>
+          <th class="t-center">📍 Retiradas</th>
+          <th class="t-center">🚛 Deliveries</th>
+          <th class="t-center">✕ Cancel.</th>
+          <th class="t-center">Total</th>
+          <th class="t-right">Valor</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in usuarios %}
+        <tr>
+          <td><strong>{{ u.nome }}</strong></td>
+          <td class="t-center"><span class="badge badge-info">{{ u.role }}</span></td>
+          <td class="t-center">{{ u.mesas }}</td>
+          <td class="t-center">{{ u.retiradas }}</td>
+          <td class="t-center">{{ u.deliveries }}</td>
+          <td class="t-center">
+            {% if u.cancelados %}
+              <span class="text-danger">{{ u.cancelados }}</span>
+            {% else %}
+              0
+            {% endif %}
+          </td>
+          <td class="t-center"><strong>{{ u.total_pedidos }}</strong></td>
+          <td class="t-right" style="white-space:nowrap;">
+            <strong>R$ {{ '%.2f'|format(u.valor) }}</strong>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" class="vazio">
+            Nenhum pedido lançado nesse período.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      {% if usuarios %}
+      <tfoot>
+        <tr class="linha-total-row">
+          <td colspan="2" class="t-right"><strong>TOTAL</strong></td>
+          <td class="t-center"><strong>{{ total_geral.mesas }}</strong></td>
+          <td class="t-center"><strong>{{ total_geral.retiradas }}</strong></td>
+          <td class="t-center"><strong>{{ total_geral.deliveries }}</strong></td>
+          <td class="t-center"><strong>{{ total_geral.cancelados }}</strong></td>
+          <td class="t-center"><strong>{{ total_geral.total_pedidos }}</strong></td>
+          <td class="t-right" style="white-space:nowrap;">
+            <strong>R$ {{ '%.2f'|format(total_geral.valor) }}</strong>
+          </td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+
+</div>
+
+{% endblock %}

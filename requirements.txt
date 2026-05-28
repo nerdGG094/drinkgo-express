@@ -1,0 +1,15 @@
+Flask==3.0.2
+Flask-SocketIO==5.3.6
+SQLAlchemy==2.0.29
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+python-dotenv==1.0.1
+qrcode[pil]==7.4.2
+Flask==3.0.2
+Flask-SocketIO==5.3.6
+Werkzeug==3.0.3
+
+# Exportação de relatórios
+pandas==2.2.3
+openpyxl==3.1.5
+eventlet==0.35.2

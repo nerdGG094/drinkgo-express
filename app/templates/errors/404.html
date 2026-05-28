@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Página não encontrada{% endblock %}
+
+{% block content %}
+
+<div class="erro-container">
+  <div class="erro-card">
+
+    <div class="erro-numero" aria-hidden="true">
+      <span>4</span>
+      <span class="erro-zero">0</span>
+      <span>4</span>
+    </div>
+
+    <h1 class="erro-titulo">Página não encontrada</h1>
+    <p class="erro-desc">
+      A URL que você acessou não existe, foi movida ou está temporariamente indisponível.
+    </p>
+
+    <div class="erro-acoes">
+      <a href="{{ url_for('index') }}" class="btn btn-primary">← Voltar ao início</a>
+      <a href="javascript:history.back()" class="btn btn-outline">Página anterior</a>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

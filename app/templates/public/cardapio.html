@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Cardápio — Pedido #{{ pedido.id }}{% endblock %}
+
+{% block content %}
+
+<div class="container-cardapio">
+
+  <!-- ==================== INFO DO PEDIDO ==================== -->
+  <section class="top-info-box card">
+    {% if pedido and pedido.tipo == 'mesa' %}
+
+      <div class="top-info-header">
+        <div>
+          <h2 class="top-info-titulo">🪑 Mesa {{ pedido.mesa.numero }}</h2>
+          <p class="top-info-sub">
+            Atendente: <strong>{{ current_user.nome }}</strong>
+            · Status: <span class="badge badge-info">{{ pedido.status|upper }}</span>
+          </p>
+        </div>
+
+        {% if pedido.status == "aberto" %}
+        <div class="acoes-topo">
+          <a href="{{ url_for('public.editar_pedido', pedido_id=pedido.id) }}"
+             class="btn btn-info btn-sm">
+            Editar pedido
+          </a>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if pedido.itens|length > 0 %}
+      <div class="pedido-atual-box">
+        <h3>Pedido atual</h3>
+        {% for item in pedido.itens %}
+        <div class="pedido-item">
+          <span>{{ item.quantidade }}× {{ item.produto.nome }}</span>
+          <span>R$ {{ "%.2f"|format(item.subtotal()) }}</span>
+        </div>
+        {% endfor %}
+
+        <div class="pedido-total">
+          Total: <strong>R$ {{ "%.2f"|format(pedido.total()) }}</strong>
+        </div>
+      </div>
+      {% endif %}
+
+    {% elif pedido.tipo == 'retirada' %}
+      <h2 class="top-info-titulo">📦 Retirada</h2>
+      <p class="top-info-sub"><b>Cliente:</b> {{ pedido.cliente_nome }}</p>
+      <p class="top-info-sub"><b>Telefone:</b> {{ pedido.cliente_telefone }}</p>
+
+    {% elif pedido.tipo == 'delivery' %}
+      <h2 class="top-info-titulo">🛵 Delivery</h2>
+      <p class="top-info-sub"><b>Cliente:</b> {{ pedido.cliente_nome }}</p>
+      <p class="top-info-sub"><b>Endereço:</b> {{ pedido.endereco }}</p>
+      <p class="top-info-sub"><b>Telefone:</b> {{ pedido.cliente_telefone }}</p>
+
+    {% else %}
+      <h2 class="top-info-titulo">Cardápio — Mesa {{ mesa.numero }}</h2>
+    {% endif %}
+  </section>
+
+  <!-- ==================== BUSCA / FILTRO ==================== -->
+  <div class="cardapio-busca">
+    <input type="text"
+           id="cardapio_busca"
+           class="form-control"
+           placeholder="🔎 Buscar produto ou categoria (ex: refri uva)"
+           autocomplete="off"
+           aria-label="Buscar item no cardápio">
+    <button type="button" id="cardapio_busca_clear"
+            class="cardapio-busca-clear"
+            aria-label="Limpar busca" hidden>×</button>
+  </div>
+  <div id="cardapio_sem_resultado" class="cardapio-sem-resultado" hidden>
+    Nenhum item encontrado.
+  </div>
+
+  <!-- ==================== FORM CARDÁPIO ==================== -->
+  <form method="post" class="form-cardapio">
+
+    {% for categoria_id, itens in categorias.items() %}
+    <div class="categoria-box" data-categoria="{{ categoria_id }}">
+      <button type="button" class="categoria-header">
+        <span class="categoria-nome">{{ categoria_id }}</span>
+        <span class="categoria-icone">+</span>
+      </button>
+
+      <div class="categoria-conteudo">
+        <div class="grid-produtos">
+          {% for p in itens %}
+          <div class="produto-card" data-nome="{{ p.nome }}">
+            <div class="produto-foto">
+              {% if p.foto %}
+                <img src="{{ url_for('imagem_produto_global', filename=p.foto) }}" alt="{{ p.nome }}">
+              {% else %}
+                <img src="{{ url_for('static', filename='imagens_produtos/placeholder.png') }}" alt="">
+              {% endif %}
+            </div>
+
+            <div class="produto-info">
+              <div class="produto-nome">{{ p.nome }}</div>
+              <div class="produto-preco">R$ {{ '%.2f'|format(p.preco) }}</div>
+            </div>
+
+            <div class="produto-qtd">
+              <input type="number"
+                     name="prod_{{ p.id }}"
+                     min="0"
+                     step="1"
+                     value="0"
+                     aria-label="Quantidade de {{ p.nome }}">
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="enviar-container">
+      <button type="submit" class="btn btn-primary btn-lg btn-block">
+        Enviar pedido →
+      </button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/cardapio.js') }}"></script>
+{% endblock %}
